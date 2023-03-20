@@ -83,8 +83,8 @@ def do_action(
                 100
             )  # Combined protocol lists A and B plate volume as 195mL.
             response_content = {
-                "action_msg": "StepStatus.Succeeded",
-                "action_response": "True",
+                "action_msg": "Successfully drained reservoirs",
+                "action_response": "succeeded",
                 "action_log": "",
             }
             state = "IDLE"
@@ -92,8 +92,9 @@ def do_action(
             return JSONResponse(content=response_content)
         except Exception as e:
             response_content = {
-                "status": "failed",
-                "error": str(e),
+                "action_msg": "",
+                "action_response": "failed",
+                "action_log": str(e),
             }
             print(e)
             state = "IDLE"
@@ -103,18 +104,18 @@ def do_action(
         try:
             barty_driver.refill_all(60)
             response_content = {
-                "action_msg": "StepStatus.Succeeded",
-                "action_response": "True",
-                "action_log": "",
+                "action_msg": "Successfully filled reservoirs",
+                "action_response": "succeeded",
+                "action_log": str(e),
             }
             print("finished")
             state = "IDLE"
             return JSONResponse(content=response_content)
         except Exception as e:
             response_content = {
-                "action_msg": "failed",
-                "action_response": str(e),
-                "action_log": "",
+                "action_msg": "",
+                "action_response": "failed",
+                "action_log": str(e),
             }
             state = "IDLE"
             return JSONResponse(content=response_content)
@@ -123,16 +124,17 @@ def do_action(
         try:
             barty_driver.refill(action_vars["motors"], 5)
             response_content = {
-                "action_msg": "StepStatus.Succeeded",
-                "action_response": "True",
-                "action_log": "run pumpB for" + actions_vars,
+                "action_msg": "run pumpB for" + actions_vars,
+                "action_response": "succeeded",
+                "action_log": "",
             }
             state = "IDLE"
             return JSONResponse(content=response_content)
         except Exception as e:
             response_content = {
-                "status": "failed",
-                "error": str(e),
+                "action_response": "failed",
+                "action_log": str(e),
+                "action_msg": "",
             }
             state = "IDLE"
             return JSONResponse(content=response_content)
