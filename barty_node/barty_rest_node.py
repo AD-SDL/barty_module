@@ -106,7 +106,7 @@ def do_action(
             response_content = {
                 "action_msg": "Successfully filled reservoirs",
                 "action_response": "succeeded",
-                "action_log": str(e),
+                "action_log": "",
             }
             print("finished")
             state = "IDLE"
