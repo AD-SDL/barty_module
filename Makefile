@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := all
 package_name = barty_node
-extra_folders = #examples/ test/
+extra_folders = test/
 isort = isort $(package_name) $(extra_folders)
 black = black --target-version py37 $(package_name) $(extra_folders)
 flake8 = flake8 $(package_name)/ $(extra_folders)
