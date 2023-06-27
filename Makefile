@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := all
 package_name = barty_node
-extra_folders = 
+extra_folders = test/
 isort = isort $(package_name) $(extra_folders)
 black = black --target-version py37 $(package_name) $(extra_folders)
 flake8 = flake8 $(package_name)/ $(extra_folders)
@@ -24,7 +24,8 @@ lint:
 mypy:
 	$(run_mypy) --package $(package_name)
 	$(run_mypy) $(package_name)/
-	
+	$(run_mypy) $(extra_folders)
+
 
 .PHONY: all
 all: format lint
