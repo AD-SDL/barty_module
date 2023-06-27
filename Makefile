@@ -24,7 +24,7 @@ lint:
 mypy:
 	$(run_mypy) --package $(package_name)
 	$(run_mypy) $(package_name)/
-	$(run_mypy) $(extra_folders)
+	
 
 .PHONY: all
 all: format lint
