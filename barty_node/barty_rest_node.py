@@ -53,10 +53,10 @@ def get_state():
     global barty, state
     if state != "BUSY":
         barty.get_status()
-        if sealer.status_msg == 3:
+        if barty.status_msg == 3:
                     msg.data = 'State: ERROR'
                     state = "ERROR"
-        elif sealer.status_msg == 0:
+        elif barty.status_msg == 0:
                     state = "IDLE"
     return JSONResponse(content={"State": state})
 
@@ -81,7 +81,7 @@ def do_action(
     state = "BUSY"
     if action_handle == 'pumpA':  
         try:           
-            sealer.seal()
+            #sealer.seal()
             time.sleep(15)  
             response_content = {
                     "action_msg": "StepStatus.Succeeded",
