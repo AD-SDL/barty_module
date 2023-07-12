@@ -11,7 +11,7 @@ import barty_driver
 workcell = None
 global barty, state
 local_ip = 'barty.alcf.anl.gov'
-local_port = '8000'
+local_port = 8000
 
 
 
