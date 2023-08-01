@@ -2,73 +2,81 @@ import RPi.GPIO as gpio
 import time 
 
 gpio.setwarnings(False)
-gpio.setmode(gpio.BCM) # Using GPIO numbers (outside) not the pin numbers (inside)
+gpio.setmode(gpio.BOARD) # Using the pin numbers (inside) instead of GPIO (outside)
 	
-def init():
-	gpio.setmode(gpio.BCM) # Using GPIO numbers (outside) not the pin numbers (inside)
-	gpio.setup(23, gpio.OUT) # Motor A, CCW.
-	gpio.setup(24, gpio.OUT) # Motor A, CW.
-	gpio.setup(5, gpio.OUT) # Motor B, CW.
-	gpio.setup(6, gpio.OUT) # Motor B, CCW.
-	gpio.setup(12, gpio.OUT) # Motor A
-	gpio.setup(13, gpio.OUT) # Motor B
+motor_1 = {"e":11,"f":15,"r":13}
+motor_2 = {"e":22,"f":16,"r":18}
+motor_3 = {"e":19,"f":21,"r":23}
+motor_4 = {"e":32,"f":24,"r":26}
 
-gpio.setup(12, gpio.OUT) # Motor A
-gpio.setup(13, gpio.OUT) # Motor B
-pwmA = gpio.PWM(12, 50) # Motor A, PWM.
-pwmB = gpio.PWM(13, 50) # Motor B, PWM.
-pwmA.start(0)
-pwmB.start(0)
+def init(motor):
+	gpio.setmode(gpio.BOARD)
 
-def forward(motor, speed, second):
-	init()
-	if "A" in motor:
-		pwmA.start(0)
-		time.sleep(2)
-		gpio.output(23, False)
-		gpio.output(24, True)
-		pwmA.ChangeDutyCycle(speed)
-		time.sleep(second)
-		pwmA.stop()
-	else:
-		pwmB.start(0)
-		time.sleep(2)
-		gpio.output(5, True)
-		gpio.output(6, False)
-		pwmB.ChangeDutyCycle(speed)
-		time.sleep(second)
-		pwmB.stop()
-	gpio.cleanup()
+	gpio.setup(motor["e"], gpio.OUT)
+	gpio.setup(motor["f"], gpio.OUT)
+	gpio.setup(motor["r"], gpio.OUT)
+
+	pwm = gpio.PWM(motor["e"], 50)
+	pwm.start(0)
+	motor["pwm"] = pwm
+
+	gpio.output(motor["e"], True)
+	gpio.output(motor["e"], False)
+	gpio.output(motor["e"], False)
+	return 
 	
-def backward(motor,speed, second):
-	init()
-	if "A" in motor:
-		pwmA.start(0)
+
+def forward(motors, speed, second):
+	for motor in motors:
+		init(motor)
+		motor["pwm"].start(0)
 		time.sleep(2)
-		gpio.output(23, True)
-		gpio.output(24, False)
-		pwmA.ChangeDutyCycle(speed)
-		time.sleep(second)
-		pwmA.stop()
-	else:
-		pwmB.start(0)
-		time.sleep(2)
-		gpio.output(5, False)
-		gpio.output(6, True)
-		pwmB.ChangeDutyCycle(speed)
-		time.sleep(second)
-		pwmB.stop()
+		gpio.output(motor["f"], True)
+		gpio.output(motor["r"], False)
+		motor["pwm"].ChangeDutyCycle(speed)
+
+	time.sleep(second)
+
+	for motor in motors:
+		motor["pwm"].stop()
+	
 	gpio.cleanup()
 
-def refill(motor, vol):
-	norm_speed = 1.427 # 1.5 mL/s at DC=100, f=50.
-	duration = vol/norm_speed
-	forward(motor, 100, duration)
+def backward(motors, speed, second):
+	for motor in motors:
+		init(motor)
+		motor["pwm"].start(0)
+		time.sleep(2)
+		gpio.output(motor["f"], False)
+		gpio.output(motor["r"], True)
+		motor["pwm"].ChangeDutyCycle(speed)
+
+	time.sleep(second)
+
+	for motor in motors:
+		motor["pwm"].stop()
 	
-def drain(motor, vol):
+	gpio.cleanup()
+
+def refill(motors, vol):
 	norm_speed = 1.427 # 1.5 mL/s at DC=100, f=50.
 	duration = vol/norm_speed
-	backward(motor, 100, duration)
+	forward(motors, 100, duration)
+	
+def drain(motors, vol):
+	norm_speed = 1.427 # 1.5 mL/s at DC=100, f=50.
+	duration = vol/norm_speed
+	backward(motors, 100, duration)
+
+def refill_all(vol):
+	motors = [motor_1,motor_2,motor_3,motor_4]
+	refill(motors, vol)
+
+def drain_all(vol):
+	motors = [motor_1,motor_2,motor_3,motor_4]
+	drain(motors, vol)
+
+
 	
 
 	
