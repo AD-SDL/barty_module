@@ -55,12 +55,12 @@ async def resources():
 @app.post("/action")
 def do_action(
     action_handle: str,
-    action_vars: str, 
+    action_vars, 
 ):
 
     global barty, state
     state = "BUSY"
-    args = ast.literal_eval(action_vars)
+    
 
     if action_handle == "drain_ink_all_motors":  
         try:           
@@ -100,7 +100,7 @@ def do_action(
 
     elif action_handle == "refill_ink":  
         try: 
-            barty_driver.refill(args['motors'])
+            barty_driver.refill(action_vars['motors'])
             response_content = {
                     "action_msg": "StepStatus.Succeeded",
                     "action_response": "True",
