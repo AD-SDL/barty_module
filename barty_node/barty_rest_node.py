@@ -100,7 +100,7 @@ def do_action(
 
     elif action_handle == "refill_ink":  
         try: 
-            barty_driver.refill(action_vars['motors'])
+            barty_driver.refill(action_vars['motors'], 5)
             response_content = {
                     "action_msg": "StepStatus.Succeeded",
                     "action_response": "True",
