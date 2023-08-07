@@ -30,17 +30,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, )
 
-@app.get("/state")
-def get_state():
-    global barty, state
-    if state != "BUSY":
-        barty.get_status()
-        if barty.status_msg == 3:
-                    msg.data = 'State: ERROR'
-                    state = "ERROR"
-        elif barty.status_msg == 0:
-                    state = "IDLE"
-    return JSONResponse(content={"State": state})
+#@app.get("/state")
+#def get_state():
+#    global barty, state
+#    if state != "BUSY":
+#        barty.get_status()
+#        if barty.status_msg == 3:
+#                    msg.data = 'State: ERROR'
+#                    state = "ERROR"
+#        elif barty.status_msg == 0:
+#                    state = "IDLE"
+#    return JSONResponse(content={"State": state})
 
 @app.get("/description")
 async def description():
