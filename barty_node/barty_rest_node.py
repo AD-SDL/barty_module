@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """The server that takes incoming WEI flow requests from the experiment application"""
 import json
 from argparse import ArgumentParser
@@ -7,13 +9,13 @@ from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 
 import barty_driver
+global barty
+
 
 workcell = None
 global barty, state
-local_ip = 'barty.alcf.anl.gov'
+local_ip = 'kirby.alcf.anl.gov'
 local_port = 8000
-
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,6 +30,7 @@ async def lifespan(app: FastAPI):
         -------
         None"""
     try:
+           
             state = "IDLE"
     except Exception as err:
             print(err)
@@ -52,12 +55,13 @@ def run_pathA():
 def get_state():
     global barty, state
     if state != "BUSY":
-        barty.get_status()
-        if barty.status_msg == 3:
-                    msg.data = 'State: ERROR'
-                    state = "ERROR"
-        elif barty.status_msg == 0:
-                    state = "IDLE"
+       pass
+        #barty.get_status()
+        #if barty.status_msg == 3:
+        #            msg.data = 'State: ERROR'
+        #            state = "ERROR"
+        #elif barty.status_msg == 0:
+         #           state = "IDLE"
     return JSONResponse(content={"State": state})
 
 @app.get("/description")
@@ -76,17 +80,16 @@ def do_action(
     action_handle: str,
     action_vars: str, 
 ):
-
     global barty, state
     state = "BUSY"
-    if action_handle == 'pumpA':  
+    if action_handle == 'pumpB': 
+        print(action_vars)
+        barty_driver.forward("B", 100, int(action_vars))
         try:           
-            #sealer.seal()
-            time.sleep(15)  
             response_content = {
                     "action_msg": "StepStatus.Succeeded",
                     "action_response": "True",
-                    "action_log": ""
+                    "action_log": "run pumpB for" + actions_vars
                 }
             state = "IDLE"
             return JSONResponse(content=response_content)
@@ -101,4 +104,4 @@ def do_action(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("barty_REST:app", host=local_ip, port=local_port, reload=True, ws_max_size=100000000000000000000000000000000000000)
+    uvicorn.run("barty_rest_node:app", host=local_ip, port=local_port, reload=True, ws_max_size=100000000000000000000000000000000000000)

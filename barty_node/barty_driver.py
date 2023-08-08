@@ -33,6 +33,7 @@ def forward(motors, speed, second):
 		time.sleep(2)
 		gpio.output(motor["f"], True)
 		gpio.output(motor["r"], False)
+	for motor in motors:
 		motor["pwm"].ChangeDutyCycle(speed)
 
 	time.sleep(second)
@@ -75,9 +76,8 @@ def refill_all(vol):
 def drain_all(vol):
 	motors = [motor_1,motor_2,motor_3,motor_4]
 	drain(motors, vol)
-
-
 	
+#refill([motor_1], 50)
 
 	
 
