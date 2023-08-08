@@ -1,0 +1,17 @@
+metadata:
+  name: Barty - Refill Ink - Workflow
+  author: Aileen Cleary
+  info: Refill Ink workflow for Barty for RPL Color Picker
+  version: 0.1
+
+modules:
+  - name: Barty
+
+flowdef:
+  - name: Refill Ink
+    module: Barty
+    command: refill_ink 
+    args:
+      motors: payload.refill_motor
+    comments: Refill specified color of ink to OT2.
+

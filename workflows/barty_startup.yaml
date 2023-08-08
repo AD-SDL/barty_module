@@ -1,0 +1,21 @@
+metadata:
+  name: Barty - Startup - Workflow
+  author: Aileen Cleary
+  info: Startup workflow for Barty for RPL Color
+  version: 0.1
+
+modules:
+  - name: Barty
+
+flowdef:
+  - name: Drain Max Ink
+    module: Barty
+    command: drain_ink_all_motors 
+    args:
+    comments: Drain OT2 of max vol of ink.
+
+  - name: Fill Max Ink
+    module: Barty
+    command: fill_ink_all_motors 
+    args:
+    comments: Fill OT2 of max vol of ink.
