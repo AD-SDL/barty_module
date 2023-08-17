@@ -1,3 +1,7 @@
+
+name: Barty - Startup - Workflow
+  
+
 metadata:
   name: Barty - Startup - Workflow
   author: Aileen Cleary
@@ -5,17 +9,19 @@ metadata:
   version: 0.1
 
 modules:
-  - name: Barty
+  - name: barty
 
 flowdef:
   - name: Drain Max Ink
-    module: Barty
-    command: drain_ink_all_motors 
+    module: barty
+    action: drain_ink_all_motors 
     args:
+     foo: bar
     comments: Drain OT2 of max vol of ink.
 
   - name: Fill Max Ink
-    module: Barty
-    command: fill_ink_all_motors 
+    module: barty
+    action: fill_ink_all_motors 
     args:
+     foo: bar
     comments: Fill OT2 of max vol of ink.

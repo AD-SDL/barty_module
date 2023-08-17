@@ -1,3 +1,5 @@
+name: Barty - Refill Ink - Workflow
+  
 metadata:
   name: Barty - Refill Ink - Workflow
   author: Aileen Cleary
@@ -5,12 +7,12 @@ metadata:
   version: 0.1
 
 modules:
-  - name: Barty
+  - name: barty
 
 flowdef:
   - name: Refill Ink
-    module: Barty
-    command: refill_ink 
+    module: barty
+    action: refill_ink 
     args:
       motors: payload.refill_motor
     comments: Refill specified color of ink to OT2.
