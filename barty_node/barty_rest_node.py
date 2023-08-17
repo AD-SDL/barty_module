@@ -64,7 +64,7 @@ def do_action(
 
     if action_handle == "drain_ink_all_motors":  
         try:           
-            barty_driver.drain_all(195) # Combined protocol lists A and B plate volume as 195mL.
+            barty_driver.drain_all(250) # Combined protocol lists A and B plate volume as 195mL.
             response_content = {
                     "action_msg": "StepStatus.Succeeded",
                     "action_response": "True",
@@ -82,7 +82,7 @@ def do_action(
     
     elif action_handle == "fill_ink_all_motors":  
         try:           
-            barty_driver.refill_all(195)
+            barty_driver.refill_all(100)
             response_content = {
                     "action_msg": "StepStatus.Succeeded",
                     "action_response": "True",

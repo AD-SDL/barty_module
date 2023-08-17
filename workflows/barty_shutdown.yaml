@@ -1,15 +1,18 @@
+
+name: Barty - Shut Down - Workflow
+ 
 metadata:
-  name: Barty - Shut Down - Workflow
   author: Aileen Cleary
   info: Shut Down workflow for Barty for RPL Color Picker
   version: 0.1
 
 modules:
-  - name: Barty
+  - name: barty
 
 flowdef:
   - name: Drain Max Ink
-    module: Barty
-    command: drain_ink_all_motors 
+    module: barty
+    action: drain_ink_all_motors 
     args:
+     foo: bar
     comments: Drain OT2 of max vol of ink.

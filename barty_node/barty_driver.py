@@ -17,8 +17,8 @@ def init(motor):
 	motors[motor]["pwm"] = pwm
 
 	gpio.output(motors[motor]["e"], True)
-	gpio.output(motors[motor]["e"], False)
-	gpio.output(motors[motor]["e"], False)
+	gpio.output(motors[motor]["f"], False)
+	gpio.output(motors[motor]["r"], False)
 	return 
 	
 
