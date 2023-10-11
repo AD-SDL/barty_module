@@ -1,3 +1,3 @@
-"""A system for autonomously refilling liquids"""
+"""A system for autonomously refilling liquids."""
 
-__version__ = 0.1
+__version__ = 0.1.1
