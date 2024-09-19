@@ -11,7 +11,6 @@ dependencies = [
     "uvicorn>=0.14.0",
     "ad_sdl.wei>=0.6.2",
     "RPi.GPIO==0.7.1",
-    "rpi-ws281x==5.0.0"
 ]
 requires-python = ">=3.9.1"
 readme = "README.md"

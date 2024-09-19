@@ -13,6 +13,7 @@ motors = {
     "motor_4": {"e": 32, "f": 24, "r": 26},
 }
 
+
 def init(motor):
     """Initialize the motors."""
     gpio.setmode(gpio.BOARD)

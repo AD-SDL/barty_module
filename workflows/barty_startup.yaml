@@ -1,6 +1,6 @@
 
 name: Barty - Startup - Workflow
-  
+
 
 metadata:
   name: Barty - Startup - Workflow
@@ -14,14 +14,14 @@ modules:
 flowdef:
   - name: Drain Max Ink
     module: barty
-    action: drain_ink_all_motors 
+    action: drain_ink_all_motors
     args:
      foo: bar
     comments: Drain OT2 of max vol of ink.
 
   - name: Fill Max Ink
     module: barty
-    action: fill_ink_all_motors 
+    action: fill_ink_all_motors
     args:
      foo: bar
     comments: Fill OT2 of max vol of ink.
