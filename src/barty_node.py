@@ -4,10 +4,12 @@ from itertools import count
 from typing import Optional
 
 from madsci.client.event_client import EventClient
-from madsci.common.types.action_types import ActionFailed, ActionSucceeded
+from madsci.common.types.action_types import ActionFailed, ActionSucceeded, ActionRunning, ActionRequest
 from madsci.common.types.node_types import RestNodeConfig
 from madsci.node_module.abstract_node_module import action
 from madsci.node_module.rest_node_module import RestNode
+from madsci.common.utils import threaded_task
+from madsci.common.types.base_types import Error
 
 from typing import Annotated, List
 
@@ -57,16 +59,13 @@ class BartyNode(RestNode):
     def shutdown_handler(self) -> None:
         """Shutdown Barty Node. Close connection and release resources"""
         self.logger.log("Barty shutting down...")
-        del self.barty_interface_interface
+        del self.barty_interface
         self.barty_interface = None
         self.logger.log("Shutdown complete.")
 
     def state_handler(self) -> None:
         """Periodically called to update the current state of the node."""
-        if self.barty_interface is not None:   # TODO: what is this??
-            self.node_state = {
-                "test_status_code": self.test_interface.status_code,
-            }
+        
 
     def pause(self) -> None:    # TODO: implement
         """Pause the node."""
@@ -78,7 +77,7 @@ class BartyNode(RestNode):
     def resume(self) -> None:    # TODO: implement
         """Resume the node."""
         self.logger.log("Resuming node...")
-        self.node_status.paused = False
+        self.node_status.paused = Falsedrain_all
         self.logger.log("Node resumed.")
         return True
 
@@ -115,13 +114,22 @@ class BartyNode(RestNode):
         description="Drains specified amount of liquid from all motors",
     )
     def drain_all(
-        self, 
-        amount: Annotated[int, "Amount of ink to drain, in milliliters"] = 100
+        self,
+        action: ActionRequest,
+        amount: Annotated[int, "Amount of ink to drain, in milliliters"] = 100,
     ):
         """Drains specified amount of liquid from all motors"""
-        self.barty_interface.drain_all(int(amount))
 
-        return ActionSucceeded()   # TODO: be smarter about catching errors
+        @threaded_task
+        def run_drain():
+            try:
+                self.barty_interface.drain_all(int(amount))
+                self._extend_action_history(ActionSucceeded(action_id=action.action_id))
+            except Exception as e:
+                self._extend_action_history(ActionFailed(action_id=action.action_id, errors=Error.from_exception(e)))
+        run_drain()
+
+        return ActionRunning()
     
 
     @action(
@@ -130,11 +138,21 @@ class BartyNode(RestNode):
     )
     def fill_all(
         self, 
+        action: ActionRequest,
         amount: Annotated[int, "Amount of ink to fill, in milliliters"] = 60
     ):
         """Refills the specified amount of liquid from all motors"""
-        self.barty_interface.refill_all(amount)
-        return ActionSucceeded()
+
+        @threaded_task
+        def run_refill():
+            try:
+                self.barty_interface.refill_all(int(amount))
+                self._extend_action_history(ActionSucceeded(action_id=action.action_id))
+            except Exception as e:
+                self._extend_action_history(ActionFailed(action_id=action.action_id, errors=Error.from_exception(e)))
+        run_refill()
+
+        return ActionRunning()
     
 
     action(

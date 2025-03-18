@@ -15,8 +15,6 @@ import RPi.GPIO as gpio
 class BartyInterface:
     """An interface to Barty the bartender robot"""
 
-    status_code: int = 0    # what does this do?
-
     def __init__(self, logger: Optional[EventClient] = None) -> "BartyInterface":
         """Initialize the Barty Interface"""
         self.logger = logger if logger else EventClient()

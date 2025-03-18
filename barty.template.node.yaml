@@ -1,0 +1,11 @@
+node_name: barty
+node_url: null
+node_description: MADSci node for controlling Barty, the Bartending Robot
+node_type: device
+module_name: barty
+module_version: 0.0.1
+capabilities:
+  admin_commands: []
+commands: {}
+is_template: true
+config_defaults: {}
