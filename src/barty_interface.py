@@ -1,15 +1,10 @@
-"""A Node i"""
-
-from typing import Optional
-
-from madsci.client.event_client import EventClient
-# from madsci.common.types.action_types import ActionFailed, ActionSucceeded
-# from madsci.common.types.node_types import RestNodeConfig
-# from madsci.node_module.abstract_node_module import action
-# from madsci.node_module.rest_node_module import RestNode
+"""An interface to Barty the bartender robot"""
 
 import time
 import RPi.GPIO as gpio
+from typing import Optional
+
+from madsci.client.event_client import EventClient
 
 
 class BartyInterface:
@@ -51,7 +46,7 @@ class BartyInterface:
 
         self.logger.log(f"Initialized motor: {self.motors[motor]}")
 
-        return   # TODO: Don't need to tell it to return here right? won't it just do it?
+        return  
     
     
     def forward(self, lis_motors, speed, second):
@@ -125,20 +120,6 @@ class BartyInterface:
         self.drain(lis_motors, vol)
 
         self.logger.log(f"Drained all reservoirs by volume: {vol}")
-
-
-    # def run_command(self, command: str, fail: bool = False) -> bool:
-    #     """Run a command on the test interface."""
-    #     self.logger.log(f"Running command {command}.")
-    #     if fail:
-    #         self.logger.log(f"Failed to run command {command}.")
-    #         return False
-    #     return True
-
-
-    # QUESTIONS: 
-        # should each method be returning a True False here?
-        # do I need an if main at the end here?
 
 
 if __name__ == "__main__":
