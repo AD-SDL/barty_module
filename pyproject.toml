@@ -105,25 +105,6 @@ skip-magic-trailing-comma = false
 # Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
 
-[tool.pytest.ini_options]
-# https://docs.pytest.org/en/stable/customize.html
-addopts = "-x"
-junit_family="xunit1"
-filterwarnings = [
-    "ignore::DeprecationWarning",
-    "ignore::pottery.exceptions.InefficientAccessWarning",
-]
-
-[tool.mypy]
-# https://mypy.readthedocs.io/en/stable/config_file.html#using-a-pyproject-toml
-show_error_codes = true
-check_untyped_defs = true
-follow_imports = "normal"
-strict_optional = true
-plugins = ["pydantic.mypy"]
-strict = true
-disallow_untyped_defs = true
-implicit_reexport = true
 
 [dependency-groups]
 dev = [

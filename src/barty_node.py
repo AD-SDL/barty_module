@@ -4,17 +4,8 @@ from typing import Annotated, List, Optional
 
 from madsci.client.event_client import EventClient
 from madsci.client.resource_client import ResourceClient
-from madsci.common.types.action_types import (
-    ActionRequest,
-    ActionRunning,
-    ActionSucceeded,
-)
-from madsci.common.types.auth_types import OwnershipInfo
 from madsci.common.types.node_types import RestNodeConfig
-from madsci.common.types.resource_types import ResourceTypeEnum
-from madsci.common.types.resource_types.definitions import (
-    ContinuousConsumableResourceDefinition,
-)
+from madsci.common.types.resource_types import ContinuousConsumable, ResourceTypeEnum
 from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
 from pydantic.networks import AnyUrl
@@ -41,12 +32,12 @@ class BartyNode(RestNode):
     config_model = BartyNodeConfig
     config: BartyNodeConfig
 
-    consumables: list
+    consumables: list[ContinuousConsumable] = []
 
     def startup_handler(self) -> None:
         """Initialize or reinitialize Barty."""
         self.logger.log("Barty initializing...")
-        self.barty_interface = BartyInterface(logger=self.logger)
+        # self.barty_interface = BartyInterface(logger=self.logger)
         self.resource_client = (
             ResourceClient(self.config.resource_server_url)
             if self.config.resource_server_url
@@ -54,119 +45,91 @@ class BartyNode(RestNode):
         )
         self.event_client = EventClient(self.config.event_client_config)
         self.consumables = []
-        for consumable in self.config.consumable_name_map:
+        for i in range(4):
+            consumable_name = self.config.consumable_name_map[i]
             if self.resource_client is not None:
                 candidates = self.resource_client.query_resource(
-                    resource_name=consumable,
+                    resource_name=consumable_name,
                     base_type=ResourceTypeEnum.continuous_consumable,
                     multiple=True,
                     unique=False,
                 )
                 for candidate in candidates:
                     if candidate.owner.node_id == self.node_definition.node_id:
-                        liquid_definition = candidate
+                        self.consumables.append(candidate)
                         break
                 else:
-                    liquid_definition = ContinuousConsumableResourceDefinition(
-                        resource_name=consumable,
-                        owner=OwnershipInfo(node_id=self.node_definition.node_id),
+                    self.consumables.append(
+                        ContinuousConsumable(
+                            resource_name=consumable_name,
+                            owner=self.node_definition.node_id,
+                        )
                     )
-                self.logger.log_info(liquid_definition)
+                    self.resource_client.add_resource(self.consumables[i])
+            else:
+                self.consumables.append(
+                    ContinuousConsumable(
+                        resource_name=consumable_name,
+                        owner=self.node_definition.node_id,
+                        quantity=0,
+                    )
+                )
 
         self.logger.log("Barty initialized!")
 
     def shutdown_handler(self) -> None:
         """Shutdown Barty Node. Close connection and release resources"""
         self.logger.log("Barty shutting down...")
-        del self.barty_interface
-        self.barty_interface = None
+        if self.barty_interface:
+            del self.barty_interface
+            self.barty_interface = None
         self.logger.log("Shutdown complete.")
 
     def state_handler(self) -> None:
         """Periodically called to update the current state of the node."""
-
-    # TODO: implement the following admin actions
-    def pause(self) -> None:
-        """Pause the node."""
-        self.logger.log("Pausing node...")
-        self.node_status.paused = True
-        self.logger.log("Node paused.")
-        return True
-
-    def resume(self) -> None:  # TODO: implement
-        """Resume the node."""
-        self.logger.log("Resuming node...")
-        self.node_status.paused = False
-        self.logger.log("Node resumed.")
-        return True
-
-    def shutdown(self) -> None:  # TODO: implement
-        """Shutdown the node."""
-        self.shutdown_handler()
-        return True
-
-    def reset(self) -> None:  # TODO: implement
-        """Reset the node."""
-        self.logger.log("Resetting node...")
-        result = super().reset()
-        self.logger.log("Node reset.")
-        return result
-
-    def safety_stop(self) -> None:  # TODO implement
-        """Stop the node."""
-        self.logger.log("Stopping node...")
-        self.node_status.stopped = True
-        self.logger.log("Node stopped.")
-        return True
-
-    def cancel(self) -> None:  # TODO: implement
-        """Cancel the node."""
-        self.logger.log("Canceling node...")
-        self.node_status.cancelled = True
-        self.logger.log("Node cancelled.")
-        return True
+        self.node_state = {
+            "consumables": [
+                consumable.model_dump(mode="json") for consumable in self.consumables
+            ],
+        }
 
     ### ACTIONS ###
-    @action(
-        name="drain_ink_all_motors",
-        description="Drains specified amount of liquid from all motors",
-    )
+    @action
     def drain_all(
         self,
-        amount: Annotated[int, "Amount of ink to drain, in milliliters"] = 100,
+        amount: Annotated[float, "Amount of liquid to drain, in milliliters"] = 10,
     ):
         """Drains specified amount of liquid from all motors"""
 
         self.barty_interface.drain_all(int(amount))
-        return ActionSucceeded()
 
-    @action(
-        name="fill_ink_all_motors",
-        description="fills the specified amount of ink on all pumps",
-    )
+    @action
     def fill_all(
-        self, amount: Annotated[int, "Amount of ink to fill, in milliliters"] = 60
+        self, amount: Annotated[float, "Amount of liquid to fill, in milliliters"] = 10
     ):
         """Refills the specified amount of liquid from all motors"""
 
-        self.barty_interface.refill_all(int(amount))
-        return ActionSucceeded()
+        self.barty_interface.fill_all(int(amount))
 
-    @action(
-        name="refill_ink",
-        description="fills the specified amount of ink on target pumps",
-    )
-    def refill_target(
+    @action
+    def fill(
         self,
-        action: ActionRequest,
-        motors: Annotated[List[int], "motors to run"],
-        amount: Annotated[int, "Amount of ink to fill, in milliliters"] = 5,
+        pumps: Annotated[List[int], "Pumps to refill with"],
+        amount: Annotated[float, "Amount of ink to fill, in milliliters"] = 5,
     ):
-        """Refills the specified amount of ink on target pumps"""
+        """Refills the specified amount of liquid on target pumps"""
 
-        self.barty_interface.refill(motors, amount)
+        self.barty_interface.fill(pumps, amount)
 
-        return ActionRunning()
+    @action
+    def drain(
+        self,
+        pumps: Annotated[List[int], "Pumps to drain from"],
+        amount: Annotated[float, "Amount of ink to drain, in milliliters"] = 5,
+    ):
+        """Drains the specified amount of liquid from target pumps"""
+
+        self.barty_interface.drain(pumps, amount)
 
 
 if __name__ == "__main__":

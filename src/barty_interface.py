@@ -13,6 +13,8 @@ class BartyInterface:
     cancel_flag: bool = False
     pause_flag: bool = False
 
+    pump_max_speed = 1.427  # * ~1.5 mL/s
+
     def __init__(self, logger: Optional[EventClient] = None) -> "BartyInterface":
         """Initialize the Barty Interface"""
         self.logger = logger if logger else EventClient()
@@ -27,7 +29,14 @@ class BartyInterface:
         self.logger.log("Barty initialized and connection open")
 
     def forward(self, pump_list: list[int], speed: float, seconds: float):
-        """Move the motors forward."""
+        """
+        Move the pump motors forward at the specified rate for a given amount of time.
+
+        *args, **kwargs:
+        - pump_list: a list of pump numbers to move
+        - speed: the speed at which to move the pump motors (a float between 0 and 1 representing the duty cycle)
+        - seconds: the amount of time to move the pump motors
+        """
         for pump in pump_list:
             self.motors[pump].forward(speed)
 
@@ -36,49 +45,74 @@ class BartyInterface:
         for pump in pump_list:
             self.motors[pump].stop()
 
-        self.logger.log("Moved motor forward")
+        self.logger.log(f"Moved pumps {pump_list} forward")
 
-    def backward(self, motor_list, speed, seconds):
-        """Move the motors backward."""
-        for motor in motor_list:
-            self.motors[motor].backward(speed)
+    def backward(self, pump_list: list[int], speed: float, seconds: float):
+        """
+        Move the pump motors backward at the specified rate for a given amount of time.
+
+        *args, **kwargs:
+        - pump_list: a list of pump numbers to move
+        - speed: the speed at which to move the pump motors (a float between 0 and 1 representing the duty cycle)
+        - seconds: the amount of time to move the pump motors
+        """
+        for pump in pump_list:
+            self.motors[pump].backward(speed)
 
         time.sleep(seconds)
 
-        for motor in motor_list:
-            self.motors[motor].stop()
+        for pump in pump_list:
+            self.motors[pump].stop()
 
-        self.logger.log("Moved motor backward")
+        self.logger.log(f"Moved pumps {pump_list} backward")
 
-    def refill(self, motor_list, vol):
-        """Drive the specified motors forward to refill specific ink reservoirs."""
-        norm_speed = 1.427  # * 1.5 mL/s at DC=1, f=50.
-        duration = vol / norm_speed
-        self.forward(motor_list, 1, duration)
+    def fill(self, pump_list: list[int], amount: float):
+        """
+        Drive the specified pump's motors forward to fill specific reservoirs.
 
-        self.logger.log(f"Refilled motors {motor_list} by volume {vol}")
+        *args, **kwargs:
+        - pump_list: a list of pump numbers to refill
+        - amount: the amount of liquid to refill in milliliters
+        """
+        duration = amount / self.pump_max_speed
+        self.forward(pump_list, 1, duration)
 
-    def drain(self, motor_list, vol):
-        """Drive the specified motors backward to drain specific ink reservoirs."""
-        norm_speed = 1.427  # * 1.5 mL/s at DC=100, f=50.
-        duration = vol / norm_speed
-        self.backward(motor_list, 1, duration)
+        self.logger.log(f"Refilled {pump_list} by volume {amount}")
 
-        self.logger.log(f"Drained motors {motor_list} by volume {vol}")
+    def drain(self, pump_list, amount):
+        """
+        Drive the specified pump's motors forward to refill specific reservoirs.
 
-    def refill_all(self, vol):
-        """Drive all motors forward to refill all the ink reservoirs."""
-        lis_motors = ["motor_1", "motor_2", "motor_3", "motor_4"]
-        self.refill(lis_motors, vol)
+        *args, **kwargs:
+        - pump_list: a list of pump numbers to refill
+        - amount: the amount of liquid to refill in milliliters
+        """
+        duration = amount / self.pump_max_speed
+        self.backward(pump_list, 1, duration)
 
-        self.logger.log(f"Refilled all reservoirs with volume: {vol}")
+        self.logger.log(f"Drained {pump_list} by volume {amount}")
 
-    def drain_all(self, vol):
-        """Drive all motors backward to drain all the ink reservoirs."""
-        lis_motors = ["motor_1", "motor_2", "motor_3", "motor_4"]
-        self.drain(lis_motors, vol)
+    def fill_all(self, amount: float):
+        """
+        Drive all pump motors forward to fill all the ink reservoirs.
 
-        self.logger.log(f"Drained all reservoirs by volume: {vol}")
+        *args, **kwargs:
+        - amount: the amount of liquid to refill in milliliters
+        """
+        self.fill(range(4), amount)
+
+        self.logger.log(f"Refilled all reservoirs with volume: {amount}")
+
+    def drain_all(self, amount: float):
+        """
+        Drive all pump motors backward to drain all the ink reservoirs.
+
+        *args, **kwargs:
+        - amount: the amount of liquid to refill in milliliters
+        """
+        self.drain(range(4), amount)
+
+        self.logger.log(f"Drained all reservoirs by volume: {amount}")
 
 
 if __name__ == "__main__":

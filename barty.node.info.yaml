@@ -18,63 +18,84 @@ capabilities:
   get_resources: false
   get_log: true
   admin_commands:
+  - cancel
+  - safety_stop
   - pause
-  - reset
   - lock
   - unlock
-  - cancel
-  - resume
-  - safety_stop
+  - reset
   - shutdown
+  - resume
 commands: {}
 is_template: false
 config_defaults:
   host: kirby.cels.anl.gov
 actions:
-  drain_ink_all_motors:
-    name: drain_ink_all_motors
+  drain_all:
+    name: drain_all
     description: Drains specified amount of liquid from all motors
     args:
       amount:
         name: amount
-        description: Amount of ink to drain, in milliliters
-        argument_type: int
+        description: Amount of liquid to drain, in milliliters
+        argument_type: float
         required: false
-        default: 100
+        default: 10
     locations: {}
     files: {}
     results: {}
     blocking: false
     asynchronous: true
-  fill_ink_all_motors:
-    name: fill_ink_all_motors
-    description: fills the specified amount of ink on all pumps
+  fill_all:
+    name: fill_all
+    description: Refills the specified amount of liquid from all motors
     args:
       amount:
         name: amount
-        description: Amount of ink to fill, in milliliters
-        argument_type: int
+        description: Amount of liquid to fill, in milliliters
+        argument_type: float
         required: false
-        default: 60
+        default: 10
     locations: {}
     files: {}
     results: {}
     blocking: false
     asynchronous: true
-  refill_ink:
-    name: refill_ink
-    description: fills the specified amount of ink on target pumps
+  fill:
+    name: fill
+    description: Refills the specified amount of liquid on target pumps
     args:
-      motors:
-        name: motors
-        description: motors to run
+      pumps:
+        name: pumps
+        description: Pumps to refill with
         argument_type: List[int]
         required: true
         default: null
       amount:
         name: amount
         description: Amount of ink to fill, in milliliters
-        argument_type: int
+        argument_type: float
+        required: false
+        default: 5
+    locations: {}
+    files: {}
+    results: {}
+    blocking: false
+    asynchronous: true
+  drain:
+    name: drain
+    description: Drains the specified amount of liquid from target pumps
+    args:
+      pumps:
+        name: pumps
+        description: Pumps to drain from
+        argument_type: List[int]
+        required: true
+        default: null
+      amount:
+        name: amount
+        description: Amount of ink to drain, in milliliters
+        argument_type: float
         required: false
         default: 5
     locations: {}
@@ -86,9 +107,15 @@ config:
   status_update_interval: null
   state_update_interval: null
   event_client_config: null
-  host: kirby.cels.anl.gov
+  host: localhost
   port: 8000
   protocol: http
+  consumable_name_map:
+  - Red Ink
+  - Blue Ink
+  - Yellow Ink
+  - Black Ink
+  resource_server_url: null
 config_schema:
   $defs:
     EventClientConfig:
@@ -237,5 +264,23 @@ config_schema:
       description: The protocol of the REST API, either 'http' or 'https'.
       title: Protocol
       type: string
+    consumable_name_map:
+      default:
+      - Red Ink
+      - Blue Ink
+      - Yellow Ink
+      - Black Ink
+      items:
+        type: string
+      title: Consumable Name Map
+      type: array
+    resource_server_url:
+      anyOf:
+      - format: uri
+        minLength: 1
+        type: string
+      - type: 'null'
+      default: null
+      title: Resource Server Url
   title: BartyNodeConfig
   type: object
