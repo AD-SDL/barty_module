@@ -4,14 +4,11 @@ from typing import Annotated, List
 
 from madsci.client.event_client import EventClient
 from madsci.common.types.action_types import (
-    ActionFailed,
     ActionRequest,
     ActionRunning,
     ActionSucceeded,
 )
-from madsci.common.types.base_types import Error
 from madsci.common.types.node_types import RestNodeConfig
-from madsci.common.utils import threaded_task
 from madsci.node_module.abstract_node_module import action
 from madsci.node_module.rest_node_module import RestNode
 
@@ -128,19 +125,7 @@ class BartyNode(RestNode):
     ):
         """Refills the specified amount of ink on target pumps"""
 
-        @threaded_task
-        def run_refill_target():
-            try:
-                self.barty_interface.refill(motors, amount)
-                self._extend_action_history(ActionSucceeded(action_id=action.action_id))
-            except Exception as e:
-                self._extend_action_history(
-                    ActionFailed(
-                        action_id=action.action_id, errors=Error.from_exception(e)
-                    )
-                )
-
-        run_refill_target()
+        self.barty_interface.refill(motors, amount)
 
         return ActionRunning()
 
