@@ -30,13 +30,11 @@ class BartyInterface:
         """Move the motors forward."""
         for motor in motor_list:
             self.motors[motor].forward(speed)
-            time.sleep(2)
 
-        time.sleep(seconds - 2)
+        time.sleep(seconds)
 
         for motor in motor_list:
             self.motors[motor].stop()
-            time.sleep(2)
 
         self.logger.log("Moved motor forward")
 
@@ -44,15 +42,11 @@ class BartyInterface:
         """Move the motors backward."""
         for motor in motor_list:
             self.motors[motor].backward(speed)
-            time.sleep(2)
 
-        time.sleep(seconds - 2)
+        time.sleep(seconds)
 
         for motor in motor_list:
             self.motors[motor].stop()
-            time.sleep(2)
-
-        self.logger.log("Moved motor forward")
 
         self.logger.log("Moved motor backward")
 
