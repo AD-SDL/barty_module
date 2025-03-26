@@ -17,24 +17,24 @@ class BartyInterface:
         """Initialize the Barty Interface"""
         self.logger = logger if logger else EventClient()
 
-        self.motors = {
-            "motor_1": Motor(forward="BOARD15", backward="BOARD13", enable="BOARD11"),
-            "motor_2": Motor(forward="BOARD16", backward="BOARD18", enable="BOARD22"),
-            "motor_3": Motor(forward="BOARD21", backward="BOARD23", enable="BOARD19"),
-            "motor_4": Motor(forward="BOARD24", backward="BOARD26", enable="BOARD32"),
-        }
+        self.motors = [
+            Motor(forward="BOARD15", backward="BOARD13", enable="BOARD11"),
+            Motor(forward="BOARD16", backward="BOARD18", enable="BOARD22"),
+            Motor(forward="BOARD21", backward="BOARD23", enable="BOARD19"),
+            Motor(forward="BOARD24", backward="BOARD26", enable="BOARD32"),
+        ]
 
         self.logger.log("Barty initialized and connection open")
 
-    def forward(self, motor_list, speed, seconds):
+    def forward(self, pump_list: list[int], speed: float, seconds: float):
         """Move the motors forward."""
-        for motor in motor_list:
-            self.motors[motor].forward(speed)
+        for pump in pump_list:
+            self.motors[pump].forward(speed)
 
         time.sleep(seconds)
 
-        for motor in motor_list:
-            self.motors[motor].stop()
+        for pump in pump_list:
+            self.motors[pump].stop()
 
         self.logger.log("Moved motor forward")
 

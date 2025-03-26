@@ -1,16 +1,23 @@
 """A Node implementation to use in automated tests."""
 
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 
 from madsci.client.event_client import EventClient
+from madsci.client.resource_client import ResourceClient
 from madsci.common.types.action_types import (
     ActionRequest,
     ActionRunning,
     ActionSucceeded,
 )
+from madsci.common.types.auth_types import OwnershipInfo
 from madsci.common.types.node_types import RestNodeConfig
+from madsci.common.types.resource_types import ResourceTypeEnum
+from madsci.common.types.resource_types.definitions import (
+    ContinuousConsumableResourceDefinition,
+)
 from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
+from pydantic.networks import AnyUrl
 
 from barty_interface import BartyInterface
 
@@ -18,8 +25,13 @@ from barty_interface import BartyInterface
 class BartyNodeConfig(RestNodeConfig):
     """Configuration for Barty the bartender robot."""
 
-    # Barty has nothing extra to setup in config
-    pass
+    consumable_name_map: List[str] = [
+        "Red Ink",
+        "Blue Ink",
+        "Yellow Ink",
+        "Black Ink",
+    ]
+    resource_server_url: Optional[AnyUrl] = None
 
 
 class BartyNode(RestNode):
@@ -27,13 +39,40 @@ class BartyNode(RestNode):
 
     barty_interface: BartyInterface = None
     config_model = BartyNodeConfig
+    config: BartyNodeConfig
 
-    logger = EventClient()
+    consumables: list
 
     def startup_handler(self) -> None:
         """Initialize or reinitialize Barty."""
         self.logger.log("Barty initializing...")
         self.barty_interface = BartyInterface(logger=self.logger)
+        self.resource_client = (
+            ResourceClient(self.config.resource_server_url)
+            if self.config.resource_server_url
+            else None
+        )
+        self.event_client = EventClient(self.config.event_client_config)
+        self.consumables = []
+        for consumable in self.config.consumable_name_map:
+            if self.resource_client is not None:
+                candidates = self.resource_client.query_resource(
+                    resource_name=consumable,
+                    base_type=ResourceTypeEnum.continuous_consumable,
+                    multiple=True,
+                    unique=False,
+                )
+                for candidate in candidates:
+                    if candidate.owner.node_id == self.node_definition.node_id:
+                        liquid_definition = candidate
+                        break
+                else:
+                    liquid_definition = ContinuousConsumableResourceDefinition(
+                        resource_name=consumable,
+                        owner=OwnershipInfo(node_id=self.node_definition.node_id),
+                    )
+                self.logger.log_info(liquid_definition)
+
         self.logger.log("Barty initialized!")
 
     def shutdown_handler(self) -> None:
