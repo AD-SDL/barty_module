@@ -3,8 +3,15 @@
 from typing import Annotated, List
 
 from madsci.client.event_client import EventClient
-from madsci.common.types.action_types import ActionSucceeded
+from madsci.common.types.action_types import (
+    ActionFailed,
+    ActionRequest,
+    ActionRunning,
+    ActionSucceeded,
+)
+from madsci.common.types.base_types import Error
 from madsci.common.types.node_types import RestNodeConfig
+from madsci.common.utils import threaded_task
 from madsci.node_module.abstract_node_module import action
 from madsci.node_module.rest_node_module import RestNode
 
@@ -14,7 +21,8 @@ from barty_interface import BartyInterface
 class BartyNodeConfig(RestNodeConfig):
     """Configuration for Barty the bartender robot."""
 
-    # TODO: Add configs
+    # Barty has nothing extra to setup in config
+    pass
 
 
 class BartyNode(RestNode):
@@ -28,9 +36,7 @@ class BartyNode(RestNode):
     def startup_handler(self) -> None:
         """Initialize or reinitialize Barty."""
         self.logger.log("Barty initializing...")
-        self.barty_interface = BartyInterface(
-            logger=self.logger
-        )  # TODO: would this work variable wise?
+        self.barty_interface = BartyInterface(logger=self.logger)
         self.logger.log("Barty initialized!")
 
     def shutdown_handler(self) -> None:
@@ -43,7 +49,8 @@ class BartyNode(RestNode):
     def state_handler(self) -> None:
         """Periodically called to update the current state of the node."""
 
-    def pause(self) -> None:  # TODO: implement
+    # TODO: implement the following admin actions
+    def pause(self) -> None:
         """Pause the node."""
         self.logger.log("Pausing node...")
         self.node_status.paused = True
@@ -115,12 +122,27 @@ class BartyNode(RestNode):
     )
     def refill_target(
         self,
+        action: ActionRequest,
         motors: Annotated[List[int], "motors to run"],
         amount: Annotated[int, "Amount of ink to fill, in milliliters"] = 5,
     ):
         """Refills the specified amount of ink on target pumps"""
-        self.barty_interface.refill(motors, amount)
-        return ActionSucceeded()
+
+        @threaded_task
+        def run_refill_target():
+            try:
+                self.barty_interface.refill(motors, amount)
+                self._extend_action_history(ActionSucceeded(action_id=action.action_id))
+            except Exception as e:
+                self._extend_action_history(
+                    ActionFailed(
+                        action_id=action.action_id, errors=Error.from_exception(e)
+                    )
+                )
+
+        run_refill_target()
+
+        return ActionRunning()
 
 
 if __name__ == "__main__":

@@ -1,9 +1,5 @@
-"""A Node i"""
+"""An interface to Barty the bartender robot"""
 
-# from madsci.common.types.action_types import ActionFailed, ActionSucceeded
-# from madsci.common.types.node_types import RestNodeConfig
-# from madsci.node_module.abstract_node_module import action
-# from madsci.node_module.rest_node_module import RestNode
 import time
 from typing import Optional
 
@@ -70,7 +66,7 @@ class BartyInterface:
 
         self.logger.log("Moved motor forward")
 
-    def backward(self, lis_motors, speed, second):
+    def backward(self, lis_motors, speed, seconds):
         """Move the motors backward."""
         for motor in lis_motors:
             self.initialize_motors(motor)
@@ -80,7 +76,7 @@ class BartyInterface:
             gpio.output(self.motors[motor]["r"], False)
             self.motors[motor]["pwm"].ChangeDutyCycle(speed)
 
-        time.sleep(second)
+        time.sleep(seconds)
 
         for motor in lis_motors:
             self.motors[motor]["pwm"].stop()
