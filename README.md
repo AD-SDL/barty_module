@@ -4,6 +4,8 @@ This is the repository for Barty, the low cost liquid handler developed at Argon
 
 ## Installation
 
+Note: your user must be in the same group as the `/dev/gpiomem` device (likely either `gpio` or `dialout`), in order to access the Raspberry Pi's GPIO pins.
+
 ```
 git clone https://github.com/AD-SDL/barty_module.git
 cd barty_module

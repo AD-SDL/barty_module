@@ -10,7 +10,7 @@ dependencies = [
     "madsci.common>=0.1.7",
     "madsci.node_module>=0.1.7",
     "madsci.client>=0.1.7",
-    "RPi.GPIO==0.7.1",
+    "gpiozero>=2.0.1",
 ]
 requires-python = ">=3.9.1"
 readme = "README.md"

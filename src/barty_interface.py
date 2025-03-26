@@ -3,7 +3,7 @@
 import time
 from typing import Optional
 
-import RPi.GPIO as gpio
+from gpiozero import Motor
 from madsci.client.event_client import EventClient
 
 
@@ -17,89 +17,60 @@ class BartyInterface:
         """Initialize the Barty Interface"""
         self.logger = logger if logger else EventClient()
 
-        # Using the pin numbers (inside) instead of GPIO (outside)
-        gpio.setmode(gpio.BOARD)
-        gpio.setwarnings(False)
-
         self.motors = {
-            "motor_1": {"e": 11, "f": 15, "r": 13},
-            "motor_2": {"e": 22, "f": 16, "r": 18},
-            "motor_3": {"e": 19, "f": 21, "r": 23},
-            "motor_4": {"e": 32, "f": 24, "r": 26},
+            "motor_1": Motor(forward="BOARD15", backward="BOARD13", enable="BOARD11"),
+            "motor_2": Motor(forward="BOARD16", backward="BOARD18", enable="BOARD22"),
+            "motor_3": Motor(forward="BOARD21", backward="BOARD23", enable="BOARD19"),
+            "motor_4": Motor(forward="BOARD24", backward="BOARD26", enable="BOARD32"),
         }
 
         self.logger.log("Barty initialized and connection open")
 
-    def initialize_motors(self, motor):
-        """Initialize the motors."""
-        gpio.setmode(gpio.BOARD)
-
-        gpio.setup(self.motors[motor]["e"], gpio.OUT)
-        gpio.setup(self.motors[motor]["f"], gpio.OUT)
-        gpio.setup(self.motors[motor]["r"], gpio.OUT)
-
-        pwm = gpio.PWM(self.motors[motor]["e"], 50)
-        pwm.start(0)
-        self.motors[motor]["pwm"] = pwm
-
-        gpio.output(self.motors[motor]["e"], True)
-        gpio.output(self.motors[motor]["f"], False)
-        gpio.output(self.motors[motor]["r"], False)
-
-        self.logger.log(f"Initialized motor: {self.motors[motor]}")
-
-    def forward(self, lis_motors, speed, seconds):
+    def forward(self, motor_list, speed, seconds):
         """Move the motors forward."""
-        for motor in lis_motors:
-            self.initialize_motors(motor)
-            self.motors[motor]["pwm"].start(0)
+        for motor in motor_list:
+            self.motors[motor].forward(speed)
             time.sleep(2)
-            gpio.output(self.motors[motor]["f"], False)
-            gpio.output(self.motors[motor]["r"], True)
-            self.motors[motor]["pwm"].ChangeDutyCycle(speed)
-        time.sleep(seconds)
 
-        for motor in lis_motors:
-            self.motors[motor]["pwm"].stop()
+        time.sleep(seconds - 2)
 
-        gpio.cleanup()
+        for motor in motor_list:
+            self.motors[motor].stop()
+            time.sleep(2)
 
         self.logger.log("Moved motor forward")
 
-    def backward(self, lis_motors, speed, seconds):
+    def backward(self, motor_list, speed, seconds):
         """Move the motors backward."""
-        for motor in lis_motors:
-            self.initialize_motors(motor)
-            self.motors[motor]["pwm"].start(0)
+        for motor in motor_list:
+            self.motors[motor].backward(speed)
             time.sleep(2)
-            gpio.output(self.motors[motor]["f"], True)
-            gpio.output(self.motors[motor]["r"], False)
-            self.motors[motor]["pwm"].ChangeDutyCycle(speed)
 
-        time.sleep(seconds)
+        time.sleep(seconds - 2)
 
-        for motor in lis_motors:
-            self.motors[motor]["pwm"].stop()
+        for motor in motor_list:
+            self.motors[motor].stop()
+            time.sleep(2)
 
-        gpio.cleanup()
+        self.logger.log("Moved motor forward")
 
         self.logger.log("Moved motor backward")
 
-    def refill(self, lis_motors, vol):
+    def refill(self, motor_list, vol):
         """Drive the specified motors forward to refill specific ink reservoirs."""
-        norm_speed = 1.427  # 1.5 mL/s at DC=100, f=50.
+        norm_speed = 1.427  # * 1.5 mL/s at DC=1, f=50.
         duration = vol / norm_speed
-        self.forward(lis_motors, 100, duration)
+        self.forward(motor_list, 1, duration)
 
-        self.logger.log(f"Refilled motors {lis_motors} by volume {vol}")
+        self.logger.log(f"Refilled motors {motor_list} by volume {vol}")
 
-    def drain(self, lis_motors, vol):
+    def drain(self, motor_list, vol):
         """Drive the specified motors backward to drain specific ink reservoirs."""
-        norm_speed = 1.427  # 1.5 mL/s at DC=100, f=50.
+        norm_speed = 1.427  # * 1.5 mL/s at DC=100, f=50.
         duration = vol / norm_speed
-        self.backward(lis_motors, 100, duration)
+        self.backward(motor_list, 1, duration)
 
-        self.logger.log(f"Drained motors {lis_motors} by volume {vol}")
+        self.logger.log(f"Drained motors {motor_list} by volume {vol}")
 
     def refill_all(self, vol):
         """Drive all motors forward to refill all the ink reservoirs."""
