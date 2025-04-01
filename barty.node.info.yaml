@@ -18,26 +18,26 @@ capabilities:
   get_resources: false
   get_log: true
   admin_commands:
+  - reset
   - cancel
-  - safety_stop
-  - pause
+  - resume
   - lock
   - unlock
-  - reset
+  - pause
   - shutdown
-  - resume
+  - safety_stop
 commands: {}
 is_template: false
 config_defaults:
   host: kirby.cels.anl.gov
 actions:
-  drain_all:
-    name: drain_all
-    description: Drains specified amount of liquid from all motors
+  fill_all:
+    name: fill_all
+    description: Refills the specified amount of liquid from all motors
     args:
       amount:
         name: amount
-        description: Amount of liquid to drain, in milliliters
+        description: Amount of liquid to fill, in milliliters
         argument_type: float
         required: false
         default: 10
@@ -46,13 +46,13 @@ actions:
     results: {}
     blocking: false
     asynchronous: true
-  fill_all:
-    name: fill_all
-    description: Refills the specified amount of liquid from all motors
+  drain_all:
+    name: drain_all
+    description: Drains specified amount of liquid from all motors
     args:
       amount:
         name: amount
-        description: Amount of liquid to fill, in milliliters
+        description: Amount of liquid to drain, in milliliters
         argument_type: float
         required: false
         default: 10
@@ -104,9 +104,10 @@ actions:
     blocking: false
     asynchronous: true
 config:
-  status_update_interval: null
-  state_update_interval: null
+  status_update_interval: 2.0
+  state_update_interval: 2.0
   event_client_config: null
+  resource_server_url: http://localhost:8004/
   host: localhost
   port: 8000
   protocol: http
@@ -115,9 +116,134 @@ config:
   - Blue Ink
   - Yellow Ink
   - Black Ink
-  resource_server_url: null
+  supply_definitions:
+  - resource_name: Red Ink Supply Reservoir
+    resource_type: ''
+    base_type: continuous_consumable
+    resource_description: Consumable resource Red Ink for Barty
+    owner: {}
+    unit: mL
+    quantity: 0
+    capacity: 250
+  - resource_name: Blue Ink Supply Reservoir
+    resource_type: ''
+    base_type: continuous_consumable
+    resource_description: Consumable resource Blue Ink for Barty
+    owner: {}
+    unit: mL
+    quantity: 0
+    capacity: 250
+  - resource_name: Yellow Ink Supply Reservoir
+    resource_type: ''
+    base_type: continuous_consumable
+    resource_description: Consumable resource Yellow Ink for Barty
+    owner: {}
+    unit: mL
+    quantity: 0
+    capacity: 250
+  - resource_name: Black Ink Supply Reservoir
+    resource_type: ''
+    base_type: continuous_consumable
+    resource_description: Consumable resource Black Ink for Barty
+    owner: {}
+    unit: mL
+    quantity: 0
+    capacity: 250
+  target_definitions:
+  - resource_name: Red Ink Target Reservoir
+    resource_type: ''
+    base_type: continuous_consumable
+    resource_description: null
+    owner: {}
+    unit: mL
+    quantity: null
+    capacity: 150
+  - resource_name: Blue Ink Target Reservoir
+    resource_type: ''
+    base_type: continuous_consumable
+    resource_description: null
+    owner: {}
+    unit: mL
+    quantity: null
+    capacity: 150
+  - resource_name: Yellow Ink Target Reservoir
+    resource_type: ''
+    base_type: continuous_consumable
+    resource_description: null
+    owner: {}
+    unit: mL
+    quantity: null
+    capacity: 150
+  - resource_name: Black Ink Target Reservoir
+    resource_type: ''
+    base_type: continuous_consumable
+    resource_description: null
+    owner: {}
+    unit: mL
+    quantity: null
+    capacity: 150
+  simulate: true
 config_schema:
   $defs:
+    ContinuousConsumableResourceDefinition:
+      description: Definition for a continuous consumable resource.
+      properties:
+        resource_name:
+          description: The name of the resource.
+          title: Resource Name
+          type: string
+        resource_type:
+          default: ''
+          description: The type of the resource. Either a custom type name or a resource
+            base type.
+          title: Resource Type
+          type: string
+        base_type:
+          const: continuous_consumable
+          default: continuous_consumable
+          description: The base type of the continuous consumable.
+          title: Resource Base Type
+          type: string
+        resource_description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          description: A description of the resource.
+          title: Resource Description
+        owner:
+          $ref: '#/$defs/OwnershipInfo'
+          description: The owner of this resource
+          title: Ownership Info
+        unit:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          description: The unit used to measure the quantity of the consumable.
+          title: Resource Unit
+        quantity:
+          anyOf:
+          - anyOf:
+            - type: number
+            - type: integer
+            ge: 0
+          - type: 'null'
+          default: null
+          description: The initial quantity of the consumable.
+          title: Default Resource Quantity
+        capacity:
+          anyOf:
+          - anyOf:
+            - type: number
+            - type: integer
+            ge: 0
+          - type: 'null'
+          default: null
+          description: The initial capacity of the consumable.
+          title: Resource Capacity
+      title: ContinuousConsumableResourceDefinition
+      type: object
     EventClientConfig:
       description: Configuration for an Event Client.
       properties:
@@ -156,10 +282,6 @@ config_schema:
     OwnershipInfo:
       description: Information about the ownership of a MADSci object.
       properties:
-        auth_id:
-          description: The ID of the auth that owns the object.
-          title: Auth ID
-          type: string
         user_id:
           anyOf:
           - type: string
@@ -232,14 +354,14 @@ config_schema:
       anyOf:
       - type: number
       - type: 'null'
-      default: null
+      default: 2.0
       description: The interval in seconds at which the node should update its status.
       title: Status Update Interval
     state_update_interval:
       anyOf:
       - type: number
       - type: 'null'
-      default: null
+      default: 2.0
       description: The interval in seconds at which the node should update its state.
       title: State Update Interval
     event_client_config:
@@ -249,6 +371,14 @@ config_schema:
       default: null
       description: The configuration for a MADSci event client.
       title: Event Client Configuration
+    resource_server_url:
+      anyOf:
+      - format: uri
+        minLength: 1
+        type: string
+      - type: 'null'
+      default: http://localhost:8004
+      title: Resource Server Url
     host:
       default: 127.0.0.1
       description: The host of the REST API.
@@ -274,13 +404,85 @@ config_schema:
         type: string
       title: Consumable Name Map
       type: array
-    resource_server_url:
-      anyOf:
-      - format: uri
-        minLength: 1
-        type: string
-      - type: 'null'
-      default: null
-      title: Resource Server Url
+    supply_definitions:
+      default:
+      - resource_name: Red Ink Supply Reservoir
+        resource_type: ''
+        base_type: continuous_consumable
+        resource_description: Consumable resource Red Ink for Barty
+        owner: {}
+        unit: mL
+        quantity: 0
+        capacity: 250
+      - resource_name: Blue Ink Supply Reservoir
+        resource_type: ''
+        base_type: continuous_consumable
+        resource_description: Consumable resource Blue Ink for Barty
+        owner: {}
+        unit: mL
+        quantity: 0
+        capacity: 250
+      - resource_name: Yellow Ink Supply Reservoir
+        resource_type: ''
+        base_type: continuous_consumable
+        resource_description: Consumable resource Yellow Ink for Barty
+        owner: {}
+        unit: mL
+        quantity: 0
+        capacity: 250
+      - resource_name: Black Ink Supply Reservoir
+        resource_type: ''
+        base_type: continuous_consumable
+        resource_description: Consumable resource Black Ink for Barty
+        owner: {}
+        unit: mL
+        quantity: 0
+        capacity: 250
+      items:
+        $ref: '#/$defs/ContinuousConsumableResourceDefinition'
+      title: Supply Definitions
+      type: array
+    target_definitions:
+      default:
+      - resource_name: Red Ink Target Reservoir
+        resource_type: ''
+        base_type: continuous_consumable
+        resource_description: null
+        owner: {}
+        unit: mL
+        quantity: null
+        capacity: 150
+      - resource_name: Blue Ink Target Reservoir
+        resource_type: ''
+        base_type: continuous_consumable
+        resource_description: null
+        owner: {}
+        unit: mL
+        quantity: null
+        capacity: 150
+      - resource_name: Yellow Ink Target Reservoir
+        resource_type: ''
+        base_type: continuous_consumable
+        resource_description: null
+        owner: {}
+        unit: mL
+        quantity: null
+        capacity: 150
+      - resource_name: Black Ink Target Reservoir
+        resource_type: ''
+        base_type: continuous_consumable
+        resource_description: null
+        owner: {}
+        unit: mL
+        quantity: null
+        capacity: 150
+      items:
+        $ref: '#/$defs/ContinuousConsumableResourceDefinition'
+      title: Target Definitions
+      type: array
+    simulate:
+      default: false
+      title: Simulate
+      type: boolean
   title: BartyNodeConfig
   type: object

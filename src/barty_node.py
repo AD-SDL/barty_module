@@ -2,10 +2,14 @@
 
 from typing import Annotated, List, Optional
 
-from madsci.client.event_client import EventClient
 from madsci.client.resource_client import ResourceClient
+from madsci.common.types.action_types import ActionSucceeded
 from madsci.common.types.node_types import RestNodeConfig
 from madsci.common.types.resource_types import ContinuousConsumable, ResourceTypeEnum
+from madsci.common.types.resource_types.definitions import (
+    ContinuousConsumableResourceDefinition,
+    PoolResourceDefinition
+)
 from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
 from pydantic.networks import AnyUrl
@@ -22,7 +26,30 @@ class BartyNodeConfig(RestNodeConfig):
         "Yellow Ink",
         "Black Ink",
     ]
-    resource_server_url: Optional[AnyUrl] = None
+    """A list of consumable names to be used by Barty. The order of the names should match the order of the pumps."""
+    supply_definitions: List[ContinuousConsumableResourceDefinition] = [
+        ContinuousConsumableResourceDefinition(
+            resource_name=f"{name} Supply Reservoir",
+            resource_description=f"Consumable resource {name} for Barty",
+            quantity=0,
+            capacity=250, # *We're using 250ml beakers in the RPL
+            unit="mL",
+        ) for name in consumable_name_map
+    ]
+    """A list of consumable definitions to be used by Barty. The order of the definitions should match the order of the pumps."""
+    target_definitions: List[ContinuousConsumableResourceDefinition] = [
+        ContinuousConsumableResourceDefinition(
+            resource_name=f"{name} Target Reservoir",
+            capacity=150, # *We're using 150ml deep reso in the RPL
+            unit="mL",
+        ) for name in consumable_name_map
+    ]
+    """A list of target resource IDs to be used by Barty. The order of the IDs should match the order of the pumps.
+    These are the resource IDs of the pools that we're filling using barty, not Barty's own resources."""
+    resource_server_url: Optional[AnyUrl] = "http://localhost:8004"
+    """The URL of the resource server to use. If None, the resource server will not be used."""
+    simulate: bool = False
+    """Whether to simulate the Barty interface."""
 
 
 class BartyNode(RestNode):
@@ -32,48 +59,31 @@ class BartyNode(RestNode):
     config_model = BartyNodeConfig
     config: BartyNodeConfig
 
-    consumables: list[ContinuousConsumable] = []
+    source_reservoir_ids: list[str] = []
+    target_reservoir_ids: list[str] = []
 
     def startup_handler(self) -> None:
         """Initialize or reinitialize Barty."""
         self.logger.log("Barty initializing...")
-        # self.barty_interface = BartyInterface(logger=self.logger)
+        if self.config.simulate:
+            self.barty_interface = BartyInterface(logger=self.logger, simulate=True)
+        else:
+            self.barty_interface = BartyInterface(logger=self.logger, simulate=False)
         self.resource_client = (
             ResourceClient(self.config.resource_server_url)
             if self.config.resource_server_url
             else None
         )
-        self.event_client = EventClient(self.config.event_client_config)
-        self.consumables = []
-        for i in range(4):
-            consumable_name = self.config.consumable_name_map[i]
-            if self.resource_client is not None:
-                candidates = self.resource_client.query_resource(
-                    resource_name=consumable_name,
-                    base_type=ResourceTypeEnum.continuous_consumable,
-                    multiple=True,
-                    unique=False,
-                )
-                for candidate in candidates:
-                    if candidate.owner.node_id == self.node_definition.node_id:
-                        self.consumables.append(candidate)
-                        break
-                else:
-                    self.consumables.append(
-                        ContinuousConsumable(
-                            resource_name=consumable_name,
-                            owner=self.node_definition.node_id,
-                        )
-                    )
-                    self.resource_client.add_resource(self.consumables[i])
-            else:
-                self.consumables.append(
-                    ContinuousConsumable(
-                        resource_name=consumable_name,
-                        owner=self.node_definition.node_id,
-                        quantity=0,
-                    )
-                )
+        self.source_reservoir_ids = []
+        self.target_reservoir_ids = []
+        if self.resource_client is not None:
+            for i in range(4):
+                resource = self.resource_client.init_resource(self.config.supply_definitions[i])
+                self.source_reservoir_ids.append(resource.resource_id)
+                self.logger.log_debug(f" Source Reservoir {i} ID: {resource.resource_id}")
+                resource = self.resource_client.init_resource(self.config.target_definitions[i])
+                self.target_reservoir_ids.append(resource.resource_id)
+                self.logger.log_debug(f"Target Reservoir {i} ID: {resource.resource_id}")
 
         self.logger.log("Barty initialized!")
 
@@ -87,13 +97,32 @@ class BartyNode(RestNode):
 
     def state_handler(self) -> None:
         """Periodically called to update the current state of the node."""
-        self.node_state = {
-            "consumables": [
-                consumable.model_dump(mode="json") for consumable in self.consumables
-            ],
-        }
+        if self.resource_client:
+            for i in range(4):
+                self.node_state[f"source_reservoir_{i}"] = self.resource_client.get_resource(self.source_reservoir_ids[i]).model_dump(mode="json")
+                self.node_state[f"target_reservoir_{i}"] = self.resource_client.get_resource(self.target_reservoir_ids[i]).model_dump(mode="json")
+
+    def transfer(self, source, target, amount):
+        """Transfer liquid from source to target"""
+        source_resource = self.resource_client.get_resource(source)
+        target_resource = self.resource_client.get_resource(target)
+        available = source_resource.quantity
+        self.resource_client.decrease_quantity(source_resource, amount)
+        self.resource_client.increase_quantity(target_resource, min(amount, available))
 
     ### ACTIONS ###
+    @action
+    def fill_all(
+        self, amount: Annotated[float, "Amount of liquid to fill, in milliliters"] = 10
+    ):
+        """Refills the specified amount of liquid from all motors"""
+
+        self.barty_interface.fill_all(int(amount))
+        if self.resource_client:
+            for i in range(4):
+                self.transfer(self.source_reservoir_ids[i], self.target_reservoir_ids[i], amount)
+        return ActionSucceeded()
+
     @action
     def drain_all(
         self,
@@ -102,14 +131,10 @@ class BartyNode(RestNode):
         """Drains specified amount of liquid from all motors"""
 
         self.barty_interface.drain_all(int(amount))
-
-    @action
-    def fill_all(
-        self, amount: Annotated[float, "Amount of liquid to fill, in milliliters"] = 10
-    ):
-        """Refills the specified amount of liquid from all motors"""
-
-        self.barty_interface.fill_all(int(amount))
+        if self.resource_client:
+            for i in range(4):
+                self.transfer(self.target_reservoir_ids[i], self.source_reservoir_ids[i], amount)
+        return ActionSucceeded()
 
     @action
     def fill(
@@ -120,6 +145,9 @@ class BartyNode(RestNode):
         """Refills the specified amount of liquid on target pumps"""
 
         self.barty_interface.fill(pumps, amount)
+        for pump in pumps:
+            self.transfer(self.source_reservoir_ids[pump], self.target_reservoir_ids[pump], amount)
+        return ActionSucceeded()
 
     @action
     def drain(
@@ -130,6 +158,9 @@ class BartyNode(RestNode):
         """Drains the specified amount of liquid from target pumps"""
 
         self.barty_interface.drain(pumps, amount)
+        for pump in pumps:
+            self.transfer(self.target_reservoir_ids[pump], self.source_reservoir_ids[pump], amount)
+        return ActionSucceeded()
 
 
 if __name__ == "__main__":

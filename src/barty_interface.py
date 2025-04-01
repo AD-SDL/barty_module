@@ -15,16 +15,18 @@ class BartyInterface:
 
     pump_max_speed = 1.427  # * ~1.5 mL/s
 
-    def __init__(self, logger: Optional[EventClient] = None) -> "BartyInterface":
+    def __init__(self, logger: Optional[EventClient] = None, simulate=False) -> "BartyInterface":
         """Initialize the Barty Interface"""
         self.logger = logger if logger else EventClient()
+        self.simulate = simulate
 
-        self.motors = [
-            Motor(forward="BOARD15", backward="BOARD13", enable="BOARD11"),
-            Motor(forward="BOARD16", backward="BOARD18", enable="BOARD22"),
-            Motor(forward="BOARD21", backward="BOARD23", enable="BOARD19"),
-            Motor(forward="BOARD24", backward="BOARD26", enable="BOARD32"),
-        ]
+        if not self.simulate:
+            self.motors = [
+                Motor(forward="BOARD15", backward="BOARD13", enable="BOARD11"),
+                Motor(forward="BOARD16", backward="BOARD18", enable="BOARD22"),
+                Motor(forward="BOARD21", backward="BOARD23", enable="BOARD19"),
+                Motor(forward="BOARD24", backward="BOARD26", enable="BOARD32"),
+            ]
 
         self.logger.log("Barty initialized and connection open")
 
@@ -37,13 +39,15 @@ class BartyInterface:
         - speed: the speed at which to move the pump motors (a float between 0 and 1 representing the duty cycle)
         - seconds: the amount of time to move the pump motors
         """
-        for pump in pump_list:
-            self.motors[pump].forward(speed)
+        if not self.simulate:
+            for pump in pump_list:
+                self.motors[pump].forward(speed)
 
         time.sleep(seconds)
 
-        for pump in pump_list:
-            self.motors[pump].stop()
+        if not self.simulate:
+            for pump in pump_list:
+                self.motors[pump].stop()
 
         self.logger.log(f"Moved pumps {pump_list} forward")
 
@@ -56,13 +60,15 @@ class BartyInterface:
         - speed: the speed at which to move the pump motors (a float between 0 and 1 representing the duty cycle)
         - seconds: the amount of time to move the pump motors
         """
-        for pump in pump_list:
-            self.motors[pump].backward(speed)
+        if not self.simulate:
+            for pump in pump_list:
+                self.motors[pump].backward(speed)
 
         time.sleep(seconds)
 
-        for pump in pump_list:
-            self.motors[pump].stop()
+        if not self.simulate:
+            for pump in pump_list:
+                self.motors[pump].stop()
 
         self.logger.log(f"Moved pumps {pump_list} backward")
 
