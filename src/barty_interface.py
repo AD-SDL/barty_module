@@ -15,7 +15,9 @@ class BartyInterface:
 
     pump_max_speed = 1.427  # * ~1.5 mL/s
 
-    def __init__(self, logger: Optional[EventClient] = None, simulate=False) -> "BartyInterface":
+    def __init__(
+        self, logger: Optional[EventClient] = None, simulate=False
+    ) -> "BartyInterface":
         """Initialize the Barty Interface"""
         self.logger = logger if logger else EventClient()
         self.simulate = simulate
@@ -81,7 +83,7 @@ class BartyInterface:
         - amount: the amount of liquid to refill in milliliters
         """
         duration = amount / self.pump_max_speed
-        self.forward(pump_list, 1, duration)
+        self.backward(pump_list, 1, duration)
 
         self.logger.log(f"Refilled {pump_list} by volume {amount}")
 
@@ -94,7 +96,7 @@ class BartyInterface:
         - amount: the amount of liquid to refill in milliliters
         """
         duration = amount / self.pump_max_speed
-        self.backward(pump_list, 1, duration)
+        self.forward(pump_list, 1, duration)
 
         self.logger.log(f"Drained {pump_list} by volume {amount}")
 

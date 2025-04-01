@@ -18,18 +18,19 @@ capabilities:
   get_resources: false
   get_log: true
   admin_commands:
-  - reset
-  - cancel
-  - resume
+  - safety_stop
   - lock
   - unlock
-  - pause
   - shutdown
-  - safety_stop
+  - reset
+  - resume
+  - pause
+  - cancel
 commands: {}
 is_template: false
 config_defaults:
   host: kirby.cels.anl.gov
+  resource_server_url: http://stark.cels.anl.gov:8004/
 actions:
   fill_all:
     name: fill_all
@@ -107,8 +108,8 @@ config:
   status_update_interval: 2.0
   state_update_interval: 2.0
   event_client_config: null
-  resource_server_url: http://localhost:8004/
-  host: localhost
+  resource_server_url: http://stark.cels.anl.gov:8004/
+  host: kirby.cels.anl.gov
   port: 8000
   protocol: http
   consumable_name_map:
@@ -182,7 +183,7 @@ config:
     unit: mL
     quantity: null
     capacity: 150
-  simulate: true
+  simulate: false
 config_schema:
   $defs:
     ContinuousConsumableResourceDefinition:
@@ -377,8 +378,9 @@ config_schema:
         minLength: 1
         type: string
       - type: 'null'
-      default: http://localhost:8004
-      title: Resource Server Url
+      default: null
+      description: The URL of the resource server for this node to use.
+      title: Resource Client URL
     host:
       default: 127.0.0.1
       description: The host of the REST API.
