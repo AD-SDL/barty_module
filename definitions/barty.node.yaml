@@ -18,16 +18,16 @@ capabilities:
   get_resources: false
   get_log: true
   admin_commands:
-  - safety_stop
-  - lock
   - unlock
   - shutdown
-  - reset
-  - resume
+  - lock
+  - safety_stop
   - pause
   - cancel
+  - reset
+  - resume
 commands: {}
 is_template: false
 config_defaults:
   host: kirby.cels.anl.gov
-  resource_server_url: http://parker.cels.anl.gov:8004/
+  resource_server_url: http://parker.cels.anl.gov:8003/

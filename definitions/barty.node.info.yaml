@@ -18,19 +18,19 @@ capabilities:
   get_resources: false
   get_log: true
   admin_commands:
-  - safety_stop
-  - lock
   - unlock
   - shutdown
-  - reset
-  - resume
+  - lock
+  - safety_stop
   - pause
   - cancel
+  - reset
+  - resume
 commands: {}
 is_template: false
 config_defaults:
   host: kirby.cels.anl.gov
-  resource_server_url: http://stark.cels.anl.gov:8004/
+  resource_server_url: http://parker.cels.anl.gov:8003/
 actions:
   fill_all:
     name: fill_all
@@ -108,7 +108,7 @@ config:
   status_update_interval: 2.0
   state_update_interval: 2.0
   event_client_config: null
-  resource_server_url: http://stark.cels.anl.gov:8004/
+  resource_server_url: http://parker.cels.anl.gov:8003/
   host: kirby.cels.anl.gov
   port: 8000
   protocol: http
@@ -124,7 +124,7 @@ config:
     resource_description: Consumable resource Red Ink for Barty
     owner: {}
     unit: mL
-    quantity: 0
+    quantity: 250
     capacity: 250
   - resource_name: Blue Ink Supply Reservoir
     resource_type: ''
@@ -132,7 +132,7 @@ config:
     resource_description: Consumable resource Blue Ink for Barty
     owner: {}
     unit: mL
-    quantity: 0
+    quantity: 250
     capacity: 250
   - resource_name: Yellow Ink Supply Reservoir
     resource_type: ''
@@ -140,7 +140,7 @@ config:
     resource_description: Consumable resource Yellow Ink for Barty
     owner: {}
     unit: mL
-    quantity: 0
+    quantity: 250
     capacity: 250
   - resource_name: Black Ink Supply Reservoir
     resource_type: ''
@@ -148,7 +148,7 @@ config:
     resource_description: Consumable resource Black Ink for Barty
     owner: {}
     unit: mL
-    quantity: 0
+    quantity: 250
     capacity: 250
   target_definitions:
   - resource_name: Red Ink Target Reservoir
@@ -157,7 +157,7 @@ config:
     resource_description: null
     owner: {}
     unit: mL
-    quantity: null
+    quantity: 0.0
     capacity: 150
   - resource_name: Blue Ink Target Reservoir
     resource_type: ''
@@ -165,7 +165,7 @@ config:
     resource_description: null
     owner: {}
     unit: mL
-    quantity: null
+    quantity: 0.0
     capacity: 150
   - resource_name: Yellow Ink Target Reservoir
     resource_type: ''
@@ -173,7 +173,7 @@ config:
     resource_description: null
     owner: {}
     unit: mL
-    quantity: null
+    quantity: 0.0
     capacity: 150
   - resource_name: Black Ink Target Reservoir
     resource_type: ''
@@ -181,7 +181,7 @@ config:
     resource_description: null
     owner: {}
     unit: mL
-    quantity: null
+    quantity: 0.0
     capacity: 150
   simulate: false
 config_schema:
@@ -225,13 +225,11 @@ config_schema:
           title: Resource Unit
         quantity:
           anyOf:
-          - anyOf:
-            - type: number
-            - type: integer
-            ge: 0
-          - type: 'null'
-          default: null
+          - type: number
+          - type: integer
+          default: 0.0
           description: The initial quantity of the consumable.
+          ge: 0
           title: Default Resource Quantity
         capacity:
           anyOf:
@@ -414,7 +412,7 @@ config_schema:
         resource_description: Consumable resource Red Ink for Barty
         owner: {}
         unit: mL
-        quantity: 0
+        quantity: 250
         capacity: 250
       - resource_name: Blue Ink Supply Reservoir
         resource_type: ''
@@ -422,7 +420,7 @@ config_schema:
         resource_description: Consumable resource Blue Ink for Barty
         owner: {}
         unit: mL
-        quantity: 0
+        quantity: 250
         capacity: 250
       - resource_name: Yellow Ink Supply Reservoir
         resource_type: ''
@@ -430,7 +428,7 @@ config_schema:
         resource_description: Consumable resource Yellow Ink for Barty
         owner: {}
         unit: mL
-        quantity: 0
+        quantity: 250
         capacity: 250
       - resource_name: Black Ink Supply Reservoir
         resource_type: ''
@@ -438,7 +436,7 @@ config_schema:
         resource_description: Consumable resource Black Ink for Barty
         owner: {}
         unit: mL
-        quantity: 0
+        quantity: 250
         capacity: 250
       items:
         $ref: '#/$defs/ContinuousConsumableResourceDefinition'
@@ -452,7 +450,7 @@ config_schema:
         resource_description: null
         owner: {}
         unit: mL
-        quantity: null
+        quantity: 0.0
         capacity: 150
       - resource_name: Blue Ink Target Reservoir
         resource_type: ''
@@ -460,7 +458,7 @@ config_schema:
         resource_description: null
         owner: {}
         unit: mL
-        quantity: null
+        quantity: 0.0
         capacity: 150
       - resource_name: Yellow Ink Target Reservoir
         resource_type: ''
@@ -468,7 +466,7 @@ config_schema:
         resource_description: null
         owner: {}
         unit: mL
-        quantity: null
+        quantity: 0.0
         capacity: 150
       - resource_name: Black Ink Target Reservoir
         resource_type: ''
@@ -476,7 +474,7 @@ config_schema:
         resource_description: null
         owner: {}
         unit: mL
-        quantity: null
+        quantity: 0.0
         capacity: 150
       items:
         $ref: '#/$defs/ContinuousConsumableResourceDefinition'

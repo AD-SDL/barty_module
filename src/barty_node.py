@@ -28,7 +28,7 @@ class BartyNodeConfig(RestNodeConfig):
         ContinuousConsumableResourceDefinition(
             resource_name=f"{name} Supply Reservoir",
             resource_description=f"Consumable resource {name} for Barty",
-            quantity=0,
+            quantity=250,
             capacity=250,  # *We're using 250ml beakers in the RPL
             unit="mL",
         )
@@ -99,21 +99,6 @@ class BartyNode(RestNode):
             del self.barty_interface
             self.barty_interface = None
         self.logger.log("Shutdown complete.")
-
-    def state_handler(self) -> None:
-        """Periodically called to update the current state of the node."""
-        if self.resource_client:
-            for i in range(4):
-                self.node_state[f"source_reservoir_{i}"] = (
-                    self.resource_client.get_resource(
-                        self.source_reservoir_ids[i]
-                    ).model_dump(mode="json")
-                )
-                self.node_state[f"target_reservoir_{i}"] = (
-                    self.resource_client.get_resource(
-                        self.target_reservoir_ids[i]
-                    ).model_dump(mode="json")
-                )
 
     def transfer(self, source, target, amount):
         """Transfer liquid from source to target"""
