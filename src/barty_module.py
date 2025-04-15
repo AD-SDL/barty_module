@@ -3,10 +3,11 @@
 
 from typing import Annotated, List
 
-import barty_driver
 from fastapi.datastructures import State
 from wei.modules.rest_module import RESTModule
 from wei.types.step_types import StepResponse
+
+import barty_driver
 
 barty_module = RESTModule(
     name="Barty",
