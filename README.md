@@ -1,21 +1,20 @@
 # Barty
 
-This is the repository for Barty, the low cost liquid handler developed at Argonne National Lab's Rapid Prototyping Lab.
+This is the repository for Barty, "the bartending robot", a low cost liquid consumable manager developed at Argonne National Lab's Rapid Prototyping Lab.
 
-## Installation
+## Installation and Usage
 
-```
-git clone https://github.com/AD-SDL/barty_module.git
-cd barty_module
+### Python
+
+```bash
+# Create a virtual environment named .venv
 python -m venv .venv
+# Activate the virtual environment on Linux or macOS
 source .venv/bin/activate
-pip install -e .
-```
-
-## Usage
-
-```
-cd barty_module
-source .venv/bin/activate
-python -m barty_module --port 8000
+# Alternatively, activate the virtual environment on Windows
+# .venv\Scripts\activate
+# Install the module and dependencies in the venv
+pip install .
+# Start the node
+python src/barty_module --definition <path/to/definition.yaml>
 ```
