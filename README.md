@@ -2,6 +2,8 @@
 
 This is the repository for Barty, "the bartending robot", a low cost liquid consumable manager developed at Argonne National Lab's Rapid Prototyping Lab.
 
+Barty consists of 4 peristaltic pumps controlled by a Raspberry Pi.
+
 An example definition file can be found at `definitions/barty.node.yaml` and a description of the node's capabilities can be found at `definitions/barty.node.info.yaml`
 
 ## Installation and Usage
