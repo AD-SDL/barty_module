@@ -1,6 +1,5 @@
 node_name: barty
 node_id: 01JPNF3ZJCZPDT2YFXPD10538C
-node_url: null
 node_description: MADSci node for controlling Barty, the Bartending Robot
 node_type: device
 module_name: barty
@@ -18,16 +17,11 @@ capabilities:
   get_resources: false
   get_log: true
   admin_commands:
-  - unlock
-  - shutdown
-  - lock
-  - safety_stop
-  - pause
   - cancel
+  - lock
+  - pause
   - reset
   - resume
-commands: {}
-is_template: false
-config_defaults:
-  host: kirby.cels.anl.gov
-  resource_server_url: http://parker.cels.anl.gov:8003/
+  - safety_stop
+  - shutdown
+  - unlock

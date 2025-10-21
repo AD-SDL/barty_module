@@ -2,12 +2,10 @@
 
 from typing import Annotated, List
 
-from madsci.client.resource_client import ResourceClient
+from madsci.common.ownership import get_current_ownership_info
 from madsci.common.types.action_types import ActionSucceeded
 from madsci.common.types.node_types import RestNodeConfig
-from madsci.common.types.resource_types.definitions import (
-    ContinuousConsumableResourceDefinition,
-)
+from madsci.common.types.resource_types import ContinuousConsumable
 from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
 
@@ -24,27 +22,6 @@ class BartyNodeConfig(RestNodeConfig):
         "Black Ink",
     ]
     """A list of consumable names to be used by Barty. The order of the names should match the order of the pumps."""
-    supply_definitions: List[ContinuousConsumableResourceDefinition] = [
-        ContinuousConsumableResourceDefinition(
-            resource_name=f"{name} Supply Reservoir",
-            resource_description=f"Consumable resource {name} for Barty",
-            quantity=250,
-            capacity=250,  # *We're using 250ml beakers in the RPL
-            unit="mL",
-        )
-        for name in consumable_name_map
-    ]
-    """A list of consumable definitions to be used by Barty. The order of the definitions should match the order of the pumps."""
-    target_definitions: List[ContinuousConsumableResourceDefinition] = [
-        ContinuousConsumableResourceDefinition(
-            resource_name=f"{name} Target Reservoir",
-            capacity=150,  # *We're using 150ml deep reso in the RPL
-            unit="mL",
-        )
-        for name in consumable_name_map
-    ]
-    """A list of target resource IDs to be used by Barty. The order of the IDs should match the order of the pumps.
-    These are the resource IDs of the pools that we're filling using barty, not Barty's own resources."""
     simulate: bool = False
     """Whether to simulate the Barty interface."""
 
@@ -54,41 +31,82 @@ class BartyNode(RestNode):
 
     barty_interface: BartyInterface = None
     config_model = BartyNodeConfig
-    config: BartyNodeConfig
+    config: BartyNodeConfig = BartyNodeConfig()
 
     source_reservoir_ids: list[str] = []
     target_reservoir_ids: list[str] = []
 
+    def resource_template_init(self) -> None:
+        """Handle template creation for Barty"""
+
+        self.resource_client.init_template(
+            resource=ContinuousConsumable(
+                resource_name="Barty Supply Reservoir Template",
+                resource_class="BartySupplyReservoir",
+                quantity=250,
+                capacity=250,  # *We're using 250ml beakers in the RPL
+                unit="mL",
+            ),
+            template_name="barty_supply_reservoir",
+            description="Template for Barty supply reservoirs",
+            required_overrides=["resource_name", "quantity"],
+            tags=["barty", "supply_reservoir"],
+            created_by=get_current_ownership_info().node_id,
+            version="1.0.0",
+        )
+        self.resource_client.init_template(
+            resource=ContinuousConsumable(
+                resource_name="Barty Target Reservoir Template",
+                resource_class="BartyTargetReservoir",
+                quantity=0,
+                capacity=150,  # *We're using 150ml deep reservoirs in the RPL
+                unit="mL",
+            ),
+            template_name="barty_target_reservoir",
+            description="Template for Barty target reservoirs",
+            required_overrides=["resource_name", "quantity"],
+            tags=["barty", "target_reservoir"],
+            created_by=get_current_ownership_info().node_id,
+            version="1.0.0",
+        )
+
+    def resource_init(self) -> None:
+        """Handle resource initialization for Barty"""
+
+        self.source_reservoir_ids = []
+        self.target_reservoir_ids = []
+        for material_name in self.config.consumable_name_map:
+            source_resource = self.resource_client.create_resource_from_template(
+                template_name="barty_supply_reservoir",
+                resource_name=f"{self.node_definition.node_name} {material_name} Supply Reservoir",
+                overrides={
+                    "resource_description": f"Supply reservoir for {material_name} used by {self.node_definition.node_name}",
+                },
+            )
+            self.source_reservoir_ids.append(source_resource.resource_id)
+            self.logger.log_debug(
+                f" Source Reservoir '{material_name}' ID: {source_resource.resource_id}"
+            )
+            target_resource = self.resource_client.create_resource_from_template(
+                template_name="barty_target_reservoir",
+                resource_name=f"{self.node_definition.node_name} {material_name} Target Reservoir",
+                overrides={
+                    "resource_description": f"Target reservoir for {material_name} used by {self.node_definition.node_name}",
+                },
+            )
+            self.target_reservoir_ids.append(target_resource.resource_id)
+            self.logger.log_debug(
+                f"Target Reservoir '{material_name}' ID: {target_resource.resource_id}"
+            )
+
     def startup_handler(self) -> None:
         """Initialize or reinitialize Barty."""
         self.logger.log("Barty initializing...")
-        if self.config.simulate:
-            self.barty_interface = BartyInterface(logger=self.logger, simulate=True)
-        else:
-            self.barty_interface = BartyInterface(logger=self.logger, simulate=False)
-        self.resource_client = (
-            ResourceClient(self.config.resource_server_url)
-            if self.config.resource_server_url
-            else None
+        self.barty_interface = BartyInterface(
+            logger=self.logger, simulate=self.config.simulate
         )
-        self.source_reservoir_ids = []
-        self.target_reservoir_ids = []
-        if self.resource_client is not None:
-            for i in range(4):
-                resource = self.resource_client.init_resource(
-                    self.config.supply_definitions[i]
-                )
-                self.source_reservoir_ids.append(resource.resource_id)
-                self.logger.log_debug(
-                    f" Source Reservoir {i} ID: {resource.resource_id}"
-                )
-                resource = self.resource_client.init_resource(
-                    self.config.target_definitions[i]
-                )
-                self.target_reservoir_ids.append(resource.resource_id)
-                self.logger.log_debug(
-                    f"Target Reservoir {i} ID: {resource.resource_id}"
-                )
+        self.resource_template_init()
+        self.resource_init()
 
         self.logger.log("Barty initialized!")
 
