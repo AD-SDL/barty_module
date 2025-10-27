@@ -186,6 +186,41 @@ class BartyNode(RestNode):
             )
         return ActionSucceeded()
 
+    @action
+    def drain_to_empty(
+        self,
+        pumps: Annotated[List[int], "Pumps to drain from"],
+    ):
+        """Drains the specified pumps until they are empty"""
+
+        for pump in pumps:
+            target_resource = self.resource_client.get_resource(
+                self.target_reservoir_ids[pump]
+            )
+            amount = target_resource.quantity
+            self.barty_interface.drain([pump], amount)
+            self.transfer(
+                self.target_reservoir_ids[pump],
+                self.source_reservoir_ids[pump],
+                amount,
+            )
+        return ActionSucceeded()
+
+    @action
+    def drain_all_to_empty(self):
+        """Drains all pumps until they are empty"""
+
+        for i in range(4):
+            target_resource = self.resource_client.get_resource(
+                self.target_reservoir_ids[i]
+            )
+            amount = target_resource.quantity
+            self.barty_interface.drain([i], amount)
+            self.transfer(
+                self.target_reservoir_ids[i], self.source_reservoir_ids[i], amount
+            )
+        return ActionSucceeded()
+
 
 if __name__ == "__main__":
     barty_node = BartyNode()
