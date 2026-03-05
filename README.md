@@ -1,23 +1,26 @@
 # Barty
 
-This is the repository for Barty, the low cost liquid handler developed at Argonne National Lab's Rapid Prototyping Lab.
+This is the repository for Barty, "the bartending robot", a low cost liquid consumable manager developed at Argonne National Lab's Rapid Prototyping Lab.
 
-## Installation
+Barty consists of 4 peristaltic pumps controlled by a Raspberry Pi.
 
-Note: your user must be in the same group as the `/dev/gpiomem` device (likely either `gpio` or `dialout`), in order to access the Raspberry Pi's GPIO pins.
+An example definition file can be found at `definitions/barty.node.yaml` and a description of the node's capabilities can be found at `definitions/barty.node.info.yaml`
 
-```
-git clone https://github.com/AD-SDL/barty_module.git
-cd barty_module
+## Installation and Usage
+
+### Python
+
+Note: your user must be in the same group as the `/dev/gpiomem` device (likely either `gpio` or `dialout`), in order to access the Raspberry Pi's GPIO pins. Otherwise, you must run the node as root (not recommended)
+
+```bash
+# Create a virtual environment named .venv
 python -m venv .venv
+# Activate the virtual environment on Linux or macOS
 source .venv/bin/activate
-pip install -e .
-```
-
-## Usage
-
-```
-cd barty_module
-source .venv/bin/activate
-python -m barty_module --port 8000
+# Alternatively, activate the virtual environment on Windows
+# .venv\Scripts\activate
+# Install the module and dependencies in the venv
+pip install .
+# Start the node
+python -m barty_node --definition <path/to/definition.yaml>
 ```
