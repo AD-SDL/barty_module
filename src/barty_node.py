@@ -78,9 +78,9 @@ class BartyNode(RestNode):
         for material_name in self.config.consumable_name_map:
             source_resource = self.resource_client.create_resource_from_template(
                 template_name="barty_supply_reservoir",
-                resource_name=f"{self.node_definition.node_name} {material_name} Supply Reservoir",
+                resource_name=f"{self.node_info.node_name} {material_name} Supply Reservoir",
                 overrides={
-                    "resource_description": f"Supply reservoir for {material_name} used by {self.node_definition.node_name}",
+                    "resource_description": f"Supply reservoir for {material_name} used by {self.node_info.node_name}",
                 },
             )
             self.source_reservoir_ids.append(source_resource.resource_id)
@@ -89,9 +89,9 @@ class BartyNode(RestNode):
             )
             target_resource = self.resource_client.create_resource_from_template(
                 template_name="barty_target_reservoir",
-                resource_name=f"{self.node_definition.node_name} {material_name} Target Reservoir",
+                resource_name=f"{self.node_info.node_name} {material_name} Target Reservoir",
                 overrides={
-                    "resource_description": f"Target reservoir for {material_name} used by {self.node_definition.node_name}",
+                    "resource_description": f"Target reservoir for {material_name} used by {self.node_info.node_name}",
                 },
             )
             self.target_reservoir_ids.append(target_resource.resource_id)

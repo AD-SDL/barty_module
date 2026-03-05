@@ -1,0 +1,5 @@
+# Migrated from barty.node.yaml
+# Migration date: 2026-03-05T21:33:17.930735+00:00
+node_name: barty
+node_description: MADSci node for controlling Barty, the Bartending Robot
+node_module_name: barty
