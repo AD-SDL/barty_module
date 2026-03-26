@@ -1,13 +1,14 @@
 """A Node implementation to use in automated tests."""
 
-from typing import Annotated, List
+from typing import Annotated, ClassVar, List
 
 from madsci.common.ownership import get_current_ownership_info
-from madsci.common.types.action_types import ActionSucceeded
+from madsci.common.types.action_types import ActionFailed, ActionSucceeded
 from madsci.common.types.node_types import RestNodeConfig
 from madsci.common.types.resource_types import ContinuousConsumable
 from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
+from pydantic import Field
 
 from barty_interface import BartyInterface
 
@@ -15,12 +16,14 @@ from barty_interface import BartyInterface
 class BartyNodeConfig(RestNodeConfig):
     """Configuration for Barty the bartender robot."""
 
-    consumable_name_map: List[str] = [
-        "Red Ink",
-        "Blue Ink",
-        "Yellow Ink",
-        "Black Ink",
-    ]
+    consumable_name_map: List[str] = Field(
+        default_factory=lambda: [
+            "Red Ink",
+            "Blue Ink",
+            "Yellow Ink",
+            "Black Ink",
+        ]
+    )
     """A list of consumable names to be used by Barty. The order of the names should match the order of the pumps."""
     simulate: bool = False
     """Whether to simulate the Barty interface."""
@@ -33,8 +36,8 @@ class BartyNode(RestNode):
     config_model = BartyNodeConfig
     config: BartyNodeConfig = BartyNodeConfig()
 
-    source_reservoir_ids: list[str] = []
-    target_reservoir_ids: list[str] = []
+    source_reservoir_ids: ClassVar[list[str]] = []
+    target_reservoir_ids: ClassVar[list[str]] = []
 
     def resource_template_init(self) -> None:
         """Handle template creation for Barty"""
@@ -118,7 +121,7 @@ class BartyNode(RestNode):
             self.barty_interface = None
         self.logger.log("Shutdown complete.")
 
-    def transfer(self, source, target, amount):
+    def transfer(self, source: str, target: str, amount: float) -> None:
         """Transfer liquid from source to target"""
         source_resource = self.resource_client.get_resource(source)
         target_resource = self.resource_client.get_resource(target)
@@ -126,11 +129,74 @@ class BartyNode(RestNode):
         self.resource_client.decrease_quantity(source_resource, amount)
         self.resource_client.increase_quantity(target_resource, min(amount, available))
 
+    def _adjust_to_targets(
+        self, targets: dict[int, float]
+    ) -> ActionSucceeded | ActionFailed:
+        """Adjust target reservoirs to the specified levels by filling or draining as needed.
+
+        Args:
+            targets: A mapping of pump index (0-3) to desired level in mL.
+
+        Returns:
+            ActionSucceeded with per-pump deltas, or ActionFailed on validation error.
+        """
+        num_pumps = len(self.config.consumable_name_map)
+        for pump in targets:
+            if pump < 0 or pump >= num_pumps:
+                return ActionFailed(
+                    errors=[f"Invalid pump index {pump}. Must be 0 to {num_pumps - 1}."]
+                )
+
+        for pump, target_level in targets.items():
+            if target_level < 0:
+                return ActionFailed(
+                    errors=[
+                        f"Target level for pump {pump} must be >= 0, got {target_level}."
+                    ]
+                )
+            target_resource = self.resource_client.get_resource(
+                self.target_reservoir_ids[pump]
+            )
+            if target_level > target_resource.capacity:
+                return ActionFailed(
+                    errors=[
+                        f"Target level for pump {pump} ({target_level} mL) exceeds "
+                        f"reservoir capacity ({target_resource.capacity} mL)."
+                    ]
+                )
+
+        deltas = {}
+        for pump, target_level in targets.items():
+            target_resource = self.resource_client.get_resource(
+                self.target_reservoir_ids[pump]
+            )
+            current_level = target_resource.quantity
+            delta = target_level - current_level
+
+            if delta > 0:
+                self.barty_interface.fill([pump], delta)
+                self.transfer(
+                    self.source_reservoir_ids[pump],
+                    self.target_reservoir_ids[pump],
+                    delta,
+                )
+            elif delta < 0:
+                self.barty_interface.drain([pump], abs(delta))
+                self.transfer(
+                    self.target_reservoir_ids[pump],
+                    self.source_reservoir_ids[pump],
+                    abs(delta),
+                )
+
+            deltas[pump] = delta
+
+        return ActionSucceeded(json_result={"deltas": deltas})
+
     ### ACTIONS ###
     @action
     def fill_all(
         self, amount: Annotated[float, "Amount of liquid to fill, in milliliters"] = 10
-    ):
+    ) -> ActionSucceeded:
         """Refills the specified amount of liquid from all motors"""
 
         self.barty_interface.fill_all(int(amount))
@@ -145,7 +211,7 @@ class BartyNode(RestNode):
     def drain_all(
         self,
         amount: Annotated[float, "Amount of liquid to drain, in milliliters"] = 10,
-    ):
+    ) -> ActionSucceeded:
         """Drains specified amount of liquid from all motors"""
 
         self.barty_interface.drain_all(int(amount))
@@ -161,7 +227,7 @@ class BartyNode(RestNode):
         self,
         pumps: Annotated[List[int], "Pumps to refill with"],
         amount: Annotated[float, "Amount of ink to fill, in milliliters"] = 5,
-    ):
+    ) -> ActionSucceeded:
         """Refills the specified amount of liquid on target pumps"""
 
         self.barty_interface.fill(pumps, amount)
@@ -176,7 +242,7 @@ class BartyNode(RestNode):
         self,
         pumps: Annotated[List[int], "Pumps to drain from"],
         amount: Annotated[float, "Amount of ink to drain, in milliliters"] = 5,
-    ):
+    ) -> ActionSucceeded:
         """Drains the specified amount of liquid from target pumps"""
 
         self.barty_interface.drain(pumps, amount)
@@ -190,7 +256,7 @@ class BartyNode(RestNode):
     def drain_to_empty(
         self,
         pumps: Annotated[List[int], "Pumps to drain from"],
-    ):
+    ) -> ActionSucceeded:
         """Drains the specified pumps until they are empty"""
 
         for pump in pumps:
@@ -207,7 +273,7 @@ class BartyNode(RestNode):
         return ActionSucceeded()
 
     @action
-    def drain_all_to_empty(self):
+    def drain_all_to_empty(self) -> ActionSucceeded:
         """Drains all pumps until they are empty"""
 
         for i in range(4):
@@ -220,6 +286,33 @@ class BartyNode(RestNode):
                 self.target_reservoir_ids[i], self.source_reservoir_ids[i], amount
             )
         return ActionSucceeded()
+
+    @action
+    def fill_to_target(
+        self,
+        targets: Annotated[
+            dict[int, float],
+            "Mapping of pump index (0-3) to target level in mL",
+        ],
+    ) -> ActionSucceeded | ActionFailed:
+        """Fills or drains each specified pump to reach the target level"""
+
+        return self._adjust_to_targets(targets)
+
+    @action
+    def fill_all_to_target(
+        self,
+        target_level: Annotated[
+            float,
+            "Target level in mL for all reservoirs",
+        ],
+    ) -> ActionSucceeded | ActionFailed:
+        """Fills or drains all pumps to reach the specified target level"""
+
+        targets = dict.fromkeys(
+            range(len(self.config.consumable_name_map)), target_level
+        )
+        return self._adjust_to_targets(targets)
 
 
 if __name__ == "__main__":

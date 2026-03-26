@@ -16,10 +16,10 @@ class BartyInterface:
     pump_max_speed = 1.427  # * ~1.5 mL/s
 
     def __init__(
-        self, logger: Optional[EventClient] = None, simulate=False
+        self, logger: Optional[EventClient] = None, simulate: bool = False
     ) -> "BartyInterface":
         """Initialize the Barty Interface"""
-        self.logger = logger if logger else EventClient()
+        self.logger = logger or EventClient()
         self.simulate = simulate
 
         if not self.simulate:
@@ -32,7 +32,7 @@ class BartyInterface:
 
         self.logger.log("Barty initialized and connection open")
 
-    def forward(self, pump_list: list[int], speed: float, seconds: float):
+    def forward(self, pump_list: list[int], speed: float, seconds: float) -> None:
         """
         Move the pump motors forward at the specified rate for a given amount of time.
 
@@ -53,7 +53,7 @@ class BartyInterface:
 
         self.logger.log(f"Moved pumps {pump_list} forward")
 
-    def backward(self, pump_list: list[int], speed: float, seconds: float):
+    def backward(self, pump_list: list[int], speed: float, seconds: float) -> None:
         """
         Move the pump motors backward at the specified rate for a given amount of time.
 
@@ -74,7 +74,7 @@ class BartyInterface:
 
         self.logger.log(f"Moved pumps {pump_list} backward")
 
-    def fill(self, pump_list: list[int], amount: float):
+    def fill(self, pump_list: list[int], amount: float) -> None:
         """
         Drive the specified pump's motors forward to fill specific reservoirs.
 
@@ -87,7 +87,7 @@ class BartyInterface:
 
         self.logger.log(f"Refilled {pump_list} by volume {amount}")
 
-    def drain(self, pump_list, amount):
+    def drain(self, pump_list: list[int], amount: float) -> None:
         """
         Drive the specified pump's motors forward to refill specific reservoirs.
 
@@ -100,7 +100,7 @@ class BartyInterface:
 
         self.logger.log(f"Drained {pump_list} by volume {amount}")
 
-    def fill_all(self, amount: float):
+    def fill_all(self, amount: float) -> None:
         """
         Drive all pump motors forward to fill all the ink reservoirs.
 
@@ -111,7 +111,7 @@ class BartyInterface:
 
         self.logger.log(f"Refilled all reservoirs with volume: {amount}")
 
-    def drain_all(self, amount: float):
+    def drain_all(self, amount: float) -> None:
         """
         Drive all pump motors backward to drain all the ink reservoirs.
 
